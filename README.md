@@ -1,4 +1,4 @@
-# 👀 LooK
+# L👀K
 
 AI-powered demo video generator. Give it a URL, get a polished demo video with voiceover.
 
