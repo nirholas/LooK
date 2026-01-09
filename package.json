@@ -1,0 +1,38 @@
+{
+  "name": "repovideo",
+  "version": "2.0.0",
+  "description": "AI-powered demo video generator - terminal, web, and pro modes",
+  "bin": {
+    "repovideo": "./bin/repovideo.js"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node bin/repovideo.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "github",
+    "demo",
+    "video",
+    "ai",
+    "cli",
+    "developer-tools",
+    "screen-recording",
+    "cursor-tracking"
+  ],
+  "author": "nichbot",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "marked": "^12.0.0",
+    "openai": "^4.28.0",
+    "ora": "^8.0.1",
+    "playwright": "^1.57.0",
+    "sharp": "^0.34.0",
+    "simple-git": "^3.22.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
