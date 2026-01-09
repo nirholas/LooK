@@ -1,4 +1,4 @@
-# 🎬 RepoVideo
+# 👀 LooK
 
 AI-powered demo video generator. Give it a URL, get a polished demo video with voiceover.
 
@@ -7,7 +7,7 @@ AI-powered demo video generator. Give it a URL, get a polished demo video with v
 - **🌐 Web Demo Mode** - Record any website with AI-generated script and voiceover
 - **💻 Terminal Mode** - Record GitHub repos with terminal commands (requires VHS)
 - **🤖 AI Vision** - GPT-4V analyzes your site and writes the script
-- **�� AI Voice** - OpenAI TTS generates professional voiceover
+- **🗣️ AI Voice** - OpenAI TTS generates professional voiceover
 - **📹 60fps Recording** - Smooth browser recording with Playwright
 - **🎨 Pro Effects** - Color grading, vignette, zoom effects
 - **📦 Multi-platform Export** - YouTube, Twitter, Instagram, TikTok, GIF
