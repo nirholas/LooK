@@ -120,3 +120,4 @@ export OPENAI_API_KEY=sk-proj-...  # Required for AI features
 ## License
 
 MIT
+
