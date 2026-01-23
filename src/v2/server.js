@@ -11,8 +11,12 @@ import chalk from 'chalk';
 import { Project } from './project.js';
 import { analyzeWebsite, generateScript, generateVoiceover } from './ai.js';
 import { recordBrowser } from './recorder.js';
+import { LiveRecorder } from './live-recorder.js';
 import { AutoZoom } from './auto-zoom.js';
 import { postProcess, combineVideoAudio, exportWithPreset } from './post-process.js';
+
+// Active live recording sessions
+const liveSessions = new Map();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -273,6 +277,273 @@ export async function startServer(options = {}) {
     }
   });
 
+  // ============================================================
+  // Live Recording API - Real-time preview with pause/resume
+  // ============================================================
+
+  /**
+   * POST /api/live/start - Start a live recording session with real-time preview
+   * 
+   * Creates a new recording session where you can:
+   * - Watch the recording in real-time via WebSocket frames
+   * - Pause and resume at any time
+   * - Take manual control of the cursor
+   * - Stop early or let it run for the full duration
+   */
+  app.post('/api/live/start', async (req, res) => {
+    const { projectId, url, options = {} } = req.body;
+
+    let project;
+    
+    try {
+      if (projectId) {
+        project = await Project.load(projectId);
+      } else if (url) {
+        project = new Project();
+        project.url = url;
+      } else {
+        return res.status(400).json({ error: 'projectId or url is required' });
+      }
+
+      // Generate session ID
+      const sessionId = `live-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      
+      // Create live recorder
+      const recorder = new LiveRecorder({
+        width: options.width || project.settings.width,
+        height: options.height || project.settings.height,
+        duration: (options.duration || project.settings.duration) * 1000,
+        headless: options.headless ?? false, // Default to visible browser
+        previewFps: options.previewFps || 10,
+        autoDemo: options.autoDemo ?? true
+      });
+      
+      // Set up event handlers
+      recorder.on('frame', (frame) => {
+        // Broadcast frame to subscribed WebSocket clients
+        for (const client of clients) {
+          if (client.liveSessionId === sessionId && client.readyState === 1) {
+            client.send(JSON.stringify({
+              type: 'live-frame',
+              sessionId,
+              data: frame,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      });
+      
+      recorder.on('stateChange', (state) => {
+        broadcast('live-state', { sessionId, ...state });
+      });
+      
+      recorder.on('click', (click) => {
+        broadcast('live-click', { sessionId, ...click });
+      });
+      
+      recorder.on('complete', async (result) => {
+        // Save recording to project
+        if (result.videoPath && project) {
+          const projectDir = project.getProjectDir();
+          await mkdir(projectDir, { recursive: true });
+          
+          const destVideoPath = join(projectDir, 'raw-video.webm');
+          await copyFile(result.videoPath, destVideoPath);
+          project.rawVideo = destVideoPath;
+          project.cursorData = result.cursorData;
+          project.timeline.duration = result.duration / 1000;
+          
+          await project.save();
+        }
+        
+        broadcast('live-complete', { 
+          sessionId, 
+          projectId: project?.id,
+          duration: result.duration 
+        });
+        
+        // Clean up session
+        liveSessions.delete(sessionId);
+      });
+      
+      recorder.on('error', (error) => {
+        broadcast('live-error', { sessionId, error: error.message });
+        liveSessions.delete(sessionId);
+      });
+      
+      // Store session
+      liveSessions.set(sessionId, { recorder, project });
+      
+      // Start recording
+      await recorder.start(project.url);
+      
+      res.json({
+        sessionId,
+        projectId: project.id,
+        state: recorder.state,
+        message: 'Live recording started. Connect via WebSocket to receive frames.'
+      });
+
+    } catch (error) {
+      broadcast('error', { message: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/live/:sessionId/pause - Pause the live recording
+   */
+  app.post('/api/live/:sessionId/pause', async (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    try {
+      await session.recorder.pause();
+      res.json({ 
+        state: session.recorder.state, 
+        elapsed: session.recorder.getElapsedTime() 
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/live/:sessionId/resume - Resume the live recording
+   */
+  app.post('/api/live/:sessionId/resume', async (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    try {
+      await session.recorder.resume();
+      res.json({ 
+        state: session.recorder.state, 
+        elapsed: session.recorder.getElapsedTime() 
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/live/:sessionId/stop - Stop the live recording
+   */
+  app.post('/api/live/:sessionId/stop', async (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    try {
+      const result = await session.recorder.stop();
+      res.json({ 
+        success: true,
+        projectId: session.project?.id,
+        duration: result.duration
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/live/:sessionId/manual - Enable manual control mode
+   */
+  app.post('/api/live/:sessionId/manual', async (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    session.recorder.enableManualMode();
+    res.json({ manualMode: true });
+  });
+
+  /**
+   * POST /api/live/:sessionId/action - Perform an action during live recording
+   * 
+   * Body: { type: 'move' | 'click' | 'scroll' | 'type', ... }
+   */
+  app.post('/api/live/:sessionId/action', async (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    const { type, x, y, duration, amount, text } = req.body;
+    
+    try {
+      switch (type) {
+        case 'move':
+          await session.recorder.moveCursor(x, y, duration || 300);
+          break;
+        case 'click':
+          if (x !== undefined && y !== undefined) {
+            await session.recorder.moveCursor(x, y, 200);
+          }
+          await session.recorder.click();
+          break;
+        case 'scroll':
+          await session.recorder.scroll(amount || 300);
+          break;
+        case 'type':
+          await session.recorder.type(text || '');
+          break;
+        default:
+          return res.status(400).json({ error: `Unknown action type: ${type}` });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/live/:sessionId/status - Get current session status
+   */
+  app.get('/api/live/:sessionId/status', (req, res) => {
+    const session = liveSessions.get(req.params.sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({
+      sessionId: req.params.sessionId,
+      state: session.recorder.state,
+      elapsed: session.recorder.getElapsedTime(),
+      manualMode: session.recorder.manualMode,
+      projectId: session.project?.id
+    });
+  });
+
+  /**
+   * GET /api/live/sessions - List all active live sessions
+   */
+  app.get('/api/live/sessions', (req, res) => {
+    const sessions = [];
+    for (const [sessionId, session] of liveSessions) {
+      sessions.push({
+        sessionId,
+        state: session.recorder.state,
+        elapsed: session.recorder.getElapsedTime(),
+        projectId: session.project?.id
+      });
+    }
+    res.json({ sessions });
+  });
+
   /**
    * POST /api/voice - Generate voiceover for a project
    */
@@ -531,6 +802,91 @@ export async function startServer(options = {}) {
           case 'subscribe':
             // Client wants to subscribe to project updates
             ws.projectId = payload.projectId;
+            break;
+          
+          // Live recording subscription
+          case 'subscribe-live':
+            // Subscribe to live recording frame stream
+            ws.liveSessionId = payload.sessionId;
+            const session = liveSessions.get(payload.sessionId);
+            if (session) {
+              sendToClient(ws, 'live-subscribed', { 
+                sessionId: payload.sessionId,
+                state: session.recorder.state,
+                elapsed: session.recorder.getElapsedTime()
+              });
+            } else {
+              sendToClient(ws, 'error', { message: 'Session not found' });
+            }
+            break;
+            
+          case 'unsubscribe-live':
+            // Unsubscribe from live recording
+            ws.liveSessionId = null;
+            sendToClient(ws, 'live-unsubscribed', { sessionId: payload.sessionId });
+            break;
+          
+          // Live recording controls via WebSocket (low latency)
+          case 'live-pause':
+            {
+              const sess = liveSessions.get(payload.sessionId);
+              if (sess) {
+                await sess.recorder.pause();
+                sendToClient(ws, 'live-state', { 
+                  sessionId: payload.sessionId,
+                  state: sess.recorder.state 
+                });
+              }
+            }
+            break;
+            
+          case 'live-resume':
+            {
+              const sess = liveSessions.get(payload.sessionId);
+              if (sess) {
+                await sess.recorder.resume();
+                sendToClient(ws, 'live-state', { 
+                  sessionId: payload.sessionId,
+                  state: sess.recorder.state 
+                });
+              }
+            }
+            break;
+            
+          case 'live-stop':
+            {
+              const sess = liveSessions.get(payload.sessionId);
+              if (sess) {
+                await sess.recorder.stop();
+              }
+            }
+            break;
+            
+          case 'live-action':
+            // Perform action during live recording
+            {
+              const sess = liveSessions.get(payload.sessionId);
+              if (sess) {
+                const { type, x, y, duration, amount, text } = payload;
+                switch (type) {
+                  case 'move':
+                    await sess.recorder.moveCursor(x, y, duration || 300);
+                    break;
+                  case 'click':
+                    if (x !== undefined && y !== undefined) {
+                      await sess.recorder.moveCursor(x, y, 200);
+                    }
+                    await sess.recorder.click();
+                    break;
+                  case 'scroll':
+                    await sess.recorder.scroll(amount || 300);
+                    break;
+                  case 'type':
+                    await sess.recorder.type(text || '');
+                    break;
+                }
+              }
+            }
             break;
             
           default:

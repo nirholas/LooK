@@ -136,6 +136,74 @@ program
     }
   });
 
+// Walkthrough: Multi-page site exploration demo
+program
+  .command('walkthrough <url>')
+  .description('Generate a multi-page demo that explores an entire website')
+  .option('-o, --output <path>', 'Output file', './walkthrough.mp4')
+  .option('-d, --duration <seconds>', 'Total duration', '60')
+  .option('-v, --voice <voice>', 'TTS voice (nova, alloy, echo, fable, onyx, shimmer)', 'nova')
+  .option('-s, --style <style>', 'Script style (professional, casual, energetic)', 'professional')
+  .option('-f, --focus <focus>', 'Focus area (features, pricing, overview, technical)', 'features')
+  .option('--max-pages <n>', 'Maximum pages to visit', '5')
+  .option('--zoom-mode <mode>', 'Zoom mode (none, basic, smart, follow)', 'smart')
+  .option('--max-zoom <level>', 'Maximum zoom level', '1.6')
+  .option('--skip-voice', 'Skip voiceover generation')
+  .option('--dry-run', 'Explore site and show plan without recording')
+  .action(async (url, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('🗺️  Multi-page walkthrough mode\n'));
+    console.log(chalk.dim('  AI will explore your site and create a comprehensive demo\n'));
+    
+    try {
+      const { generateWalkthrough, SiteExplorer } = await import('../src/v2/index.js');
+      
+      if (options.dryRun) {
+        // Just explore and show the plan
+        console.log(chalk.dim('Exploring site structure...\n'));
+        const explorer = new SiteExplorer({ maxPages: parseInt(options.maxPages) });
+        await explorer.init();
+        const siteMap = await explorer.explore(url);
+        await explorer.close();
+        
+        console.log(chalk.green(`\n✅ Found ${siteMap.totalDiscovered} pages:\n`));
+        for (const page of siteMap.pages) {
+          console.log(chalk.cyan(`  • ${page.path}`), chalk.dim(`- ${page.title || 'Untitled'}`));
+        }
+        console.log(chalk.dim('\nRun without --dry-run to record the demo.'));
+        return;
+      }
+      
+      await generateWalkthrough(url, {
+        output: options.output,
+        duration: parseInt(options.duration),
+        voice: options.voice,
+        style: options.style,
+        focus: options.focus,
+        maxPages: parseInt(options.maxPages),
+        zoomMode: options.zoomMode,
+        maxZoom: parseFloat(options.maxZoom),
+        skipVoice: options.skipVoice,
+        onProgress: (p) => {
+          if (p.phase === 'exploring') console.log(chalk.dim(`  🔍 ${p.message}`));
+          else if (p.phase === 'explored') console.log(chalk.green(`  ✓ ${p.message}`));
+          else if (p.phase === 'planning') console.log(chalk.dim(`  🧠 ${p.message}`));
+          else if (p.phase === 'planned') console.log(chalk.green(`  ✓ ${p.message}`));
+          else if (p.phase === 'recording') console.log(chalk.dim(`  🎬 ${p.message}`));
+          else if (p.phase === 'processing') console.log(chalk.dim(`  ⚙️  ${p.message}`));
+          else if (p.phase === 'voiceover') console.log(chalk.dim(`  🎤 ${p.message}`));
+          else if (p.phase === 'complete') console.log(chalk.green(`\n  ✅ ${p.message}`));
+          else if (p.phase === 'error') console.log(chalk.red(`  ❌ ${p.message}`));
+        }
+      });
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
+      process.exit(1);
+    }
+  });
+
 // Mobile: Mobile app demos with Appium
 program
   .command('mobile <app>')
@@ -502,6 +570,82 @@ program
     }
   });
 
+// Mobile Docker: Start Android emulator + Appium container
+program
+  .command('mobile-start')
+  .description('Start Docker-based Android emulator + Appium for mobile recording')
+  .action(async () => {
+    console.log(chalk.magenta(banner));
+    try {
+      const { startMobileDocker } = await import('./mobile-docker.js');
+      await startMobileDocker();
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
+      process.exit(1);
+    }
+  });
+
+// Mobile Docker: Stop container
+program
+  .command('mobile-stop')
+  .description('Stop the mobile Docker container')
+  .action(async () => {
+    console.log(chalk.magenta(banner));
+    try {
+      const { stopMobileDocker } = await import('./mobile-docker.js');
+      stopMobileDocker();
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      process.exit(1);
+    }
+  });
+
+// Mobile Docker: Check status
+program
+  .command('mobile-status')
+  .description('Check if mobile Docker environment is ready')
+  .action(async () => {
+    console.log(chalk.magenta(banner));
+    try {
+      const { getMobileDockerStatus } = await import('./mobile-docker.js');
+      await getMobileDockerStatus();
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      process.exit(1);
+    }
+  });
+
+// Mobile Docker: View logs
+program
+  .command('mobile-logs')
+  .description('View mobile Docker container logs')
+  .option('-f, --follow', 'Follow log output')
+  .action(async (options) => {
+    try {
+      const { showMobileDockerLogs } = await import('./mobile-docker.js');
+      showMobileDockerLogs(options.follow);
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      process.exit(1);
+    }
+  });
+
+// Mobile Docker: Install APK
+program
+  .command('mobile-install <apk>')
+  .description('Install an APK to the Docker Android emulator')
+  .action(async (apk) => {
+    console.log(chalk.magenta(banner));
+    try {
+      const { installApk } = await import('./mobile-docker.js');
+      await installApk(apk);
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      process.exit(1);
+    }
+  });
+
 // Default: smart detection
 program
   .argument('[url]', 'URL to record')
@@ -514,19 +658,21 @@ program
     if (!url) {
       console.log(chalk.magenta(banner));
       console.log(chalk.white('Usage:\n'));
-      console.log(chalk.cyan('  repovideo demo <url>'), '    - Website demo with AI (recommended)');
-      console.log(chalk.cyan('  repovideo mobile <app>'), '  - Mobile app demo with Appium');
-      console.log(chalk.cyan('  repovideo repo <url>'), '    - GitHub repo terminal demo');
-      console.log(chalk.cyan('  repovideo serve'), '         - Start web editor UI');
-      console.log(chalk.cyan('  repovideo edit [id]'), '     - Edit existing project');
-      console.log(chalk.cyan('  repovideo projects'), '      - List saved projects');
+      console.log(chalk.cyan('  repovideo demo <url>'), '       - Single page demo with AI (recommended)');
+      console.log(chalk.cyan('  repovideo walkthrough <url>'), '- Multi-page site exploration demo');
+      console.log(chalk.cyan('  repovideo quick <url>'), '      - Quick demo with smart defaults');
+      console.log(chalk.cyan('  repovideo mobile <app>'), '     - Mobile app demo with Appium');
+      console.log(chalk.cyan('  repovideo repo <url>'), '       - GitHub repo terminal demo');
+      console.log(chalk.cyan('  repovideo serve'), '            - Start web editor UI');
+      console.log(chalk.white('\nMobile Docker (Android):\n'));
+      console.log(chalk.cyan('  repovideo mobile-start'), '     - Start Android emulator + Appium');
+      console.log(chalk.cyan('  repovideo mobile-stop'), '      - Stop the container');
+      console.log(chalk.cyan('  repovideo mobile-status'), '    - Check if ready');
       console.log(chalk.dim('\nExamples:\n'));
       console.log(chalk.dim('  repovideo demo https://myapp.com'));
-      console.log(chalk.dim('  repovideo demo https://myapp.com -o output.mp4 --voice alloy'));
-      console.log(chalk.dim('  repovideo mobile ./MyApp.app --platform ios'));
-      console.log(chalk.dim('  repovideo mobile ./app.apk --platform android'));
-      console.log(chalk.dim('  repovideo serve'));
-      console.log(chalk.dim('  repovideo repo https://github.com/user/repo'));
+      console.log(chalk.dim('  repovideo walkthrough https://myapp.com --max-pages 5'));
+      console.log(chalk.dim('  repovideo walkthrough https://myapp.com --focus pricing --dry-run'));
+      console.log(chalk.dim('  repovideo mobile-start && repovideo mobile ./app.apk'));
       console.log();
       return;
     }

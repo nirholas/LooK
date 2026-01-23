@@ -1,0 +1,63 @@
+name: Generate Demo on PR
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+
+jobs:
+  generate-demo:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Generate demo video
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Generate demo for the preview deployment
+          # Replace with your preview URL pattern
+          PREVIEW_URL="https://pr-${{ github.event.number }}.preview.myapp.com"
+          
+          npx look-demo demo "$PREVIEW_URL" \
+            -o ./demo-pr-${{ github.event.number }}.mp4 \
+            -d 20 \
+            --reliable \
+            --skip-voice  # Skip voice in CI to save API costs
+
+      - name: Upload demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-video-pr-${{ github.event.number }}
+          path: ./demo-pr-${{ github.event.number }}.mp4
+          retention-days: 7
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifactUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🎬 **Demo video generated!**\n\nDownload the demo video from the [workflow artifacts](${artifactUrl}).`
+            });

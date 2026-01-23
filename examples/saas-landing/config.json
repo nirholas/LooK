@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "SaaS Product Demo",
+  "description": "Configuration for generating a professional SaaS landing page demo",
+  "url": "https://your-saas-app.com",
+  "output": {
+    "path": "./output/saas-demo.mp4",
+    "preset": "youtube",
+    "width": 1920,
+    "height": 1080
+  },
+  "timing": {
+    "duration": 45,
+    "introDelay": 1000,
+    "outroDelay": 2000
+  },
+  "voice": {
+    "voice": "nova",
+    "style": "professional",
+    "speed": 1.0
+  },
+  "cursor": {
+    "style": "arrow-modern",
+    "size": 32,
+    "preset": "dark",
+    "glow": false
+  },
+  "clickEffects": {
+    "effect": "ripple",
+    "color": "#3B82F6",
+    "size": 60,
+    "duration": 400
+  },
+  "zoom": {
+    "mode": "smart",
+    "intensity": 0.5,
+    "maxZoom": 1.6,
+    "minZoom": 1.0
+  },
+  "interactions": [
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Initial pause to show hero section"
+    },
+    {
+      "type": "scroll",
+      "to": "features",
+      "smooth": true,
+      "comment": "Scroll to features section"
+    },
+    {
+      "type": "hover",
+      "selector": ".feature-card:first-child",
+      "duration": 1500,
+      "comment": "Highlight first feature"
+    },
+    {
+      "type": "click",
+      "selector": ".feature-card:first-child",
+      "comment": "Click to expand feature details"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "scroll",
+      "to": "pricing",
+      "smooth": true,
+      "comment": "Scroll to pricing"
+    },
+    {
+      "type": "hover",
+      "selector": ".pricing-card.popular",
+      "duration": 2000,
+      "comment": "Highlight popular plan"
+    },
+    {
+      "type": "click",
+      "selector": ".pricing-card.popular .cta-button",
+      "comment": "Click CTA"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "scroll",
+      "to": "top",
+      "smooth": true,
+      "comment": "Return to top"
+    }
+  ],
+  "branding": {
+    "primaryColor": "#3B82F6",
+    "accentColor": "#10B981",
+    "logoPosition": "bottom-right",
+    "showWatermark": false
+  },
+  "advanced": {
+    "skipAnalysis": false,
+    "reliable": true,
+    "debug": false
+  }
+}

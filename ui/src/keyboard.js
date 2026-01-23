@@ -40,12 +40,18 @@ export class KeyboardShortcuts {
     
     // Tabs
     this.register('Digit1', 'Script tab', () => this.app.switchTab('script'));
-    this.register('Digit2', 'Settings tab', () => this.app.switchTab('settings'));
+    this.register('Digit2', 'Markers tab', () => this.app.switchTab('markers'));
+    this.register('Digit3', 'Settings tab', () => this.app.switchTab('settings'));
     
     // Actions
     this.register('KeyS', 'Save project', () => this.app.saveProject(), true); // Ctrl+S
     this.register('KeyE', 'Export video', () => this.app.showExportModal(), true); // Ctrl+E
     this.register('KeyN', 'New project', () => this.app.newProject(), true); // Ctrl+N
+    
+    // Markers
+    this.register('KeyM', 'Add marker at current time', () => this.app.addMarkerAtCurrentTime());
+    this.register('BracketLeft', 'Jump to previous marker', () => this.app.jumpToPreviousMarker());
+    this.register('BracketRight', 'Jump to next marker', () => this.app.jumpToNextMarker());
     
     // Help
     this.register('Slash', 'Show keyboard shortcuts', () => this.toggleHelp(), false, true); // Shift+?
@@ -109,10 +115,12 @@ export class KeyboardShortcuts {
       
       if (['Space', 'KeyK'].includes(shortcut.code)) {
         groups['Playback'].push({ key: keyDisplay, desc: shortcut.description });
-      } else if (['ArrowLeft', 'ArrowRight', 'KeyJ', 'KeyL', 'Home', 'End', 'Comma', 'Period'].includes(shortcut.code)) {
+      } else if (['ArrowLeft', 'ArrowRight', 'KeyJ', 'KeyL', 'Home', 'End', 'Comma', 'Period', 'BracketLeft', 'BracketRight'].includes(shortcut.code)) {
         groups['Navigation'].push({ key: keyDisplay, desc: shortcut.description });
-      } else if (['KeyF', 'Escape', 'Digit1', 'Digit2', 'Slash'].includes(shortcut.code)) {
+      } else if (['KeyF', 'Escape', 'Digit1', 'Digit2', 'Digit3', 'Slash'].includes(shortcut.code)) {
         groups['View'].push({ key: keyDisplay, desc: shortcut.description });
+      } else if (['KeyM'].includes(shortcut.code)) {
+        groups['Actions'].push({ key: keyDisplay, desc: shortcut.description });
       } else {
         groups['Actions'].push({ key: keyDisplay, desc: shortcut.description });
       }

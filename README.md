@@ -1,14 +1,40 @@
 # L👀K
 
+[![npm version](https://img.shields.io/npm/v/look-demo.svg)](https://www.npmjs.com/package/look-demo)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+
 **One command. Professional product demo videos.**
 
 Turn any website into a polished demo video with AI-generated voiceover. No editing required.
+
+<p align="center">
+  <img src="https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Demo+Video+Coming+Soon" alt="LooK Demo" width="600">
+  <br>
+  <em>Generate beautiful product demos automatically</em>
+</p>
 
 ```bash
 npx look-demo quick https://your-app.com
 ```
 
 That's it. You get a professional demo video in minutes.
+
+## 📚 Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](./docs/GETTING_STARTED.md) | Installation and first demo |
+| [CLI Reference](./docs/CLI_REFERENCE.md) | Complete command reference |
+| [Web Editor](./docs/WEB_EDITOR.md) | Visual editing interface |
+| [Mobile Setup](./docs/MOBILE_SETUP.md) | Android/iOS app recording |
+| [API Documentation](./docs/API.md) | Programmatic usage |
+| [Customization](./docs/CUSTOMIZATION.md) | Cursors, effects, zoom modes |
+| [Theme Presets](./docs/THEME_PRESETS.md) | Pre-built theme configurations |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common issues and solutions |
+
+**Project:**
+[Roadmap](./ROADMAP.md) • [Changelog](./CHANGELOG.md) • [Contributing](./CONTRIBUTING.md) • [Support](./SUPPORT.md)
 
 ## What It Does
 
@@ -58,6 +84,29 @@ look demo https://your-app.com --dry-run
 
 See the AI analysis and script before recording.
 
+### Multi-Page Walkthrough
+
+Want the AI to explore your entire site? Use the walkthrough command:
+
+```bash
+look walkthrough https://your-app.com --max-pages 5
+```
+
+This will:
+1. **Discover** all pages on your site
+2. **Prioritize** which pages are most important for a demo (features, pricing, etc.)
+3. **Navigate** through them intelligently
+4. **Generate** a coherent narrative across all pages
+
+```bash
+# Preview what pages will be visited
+look walkthrough https://your-app.com --dry-run
+
+# Focus on specific areas
+look walkthrough https://your-app.com --focus pricing
+look walkthrough https://your-app.com --focus technical
+```
+
 ## Features
 
 - **🎬 Smart Zoom** - Camera follows cursor with smooth, professional movement
@@ -67,6 +116,7 @@ See the AI analysis and script before recording.
 - **📹 60fps Recording** - Silky smooth browser capture
 - **🎨 Pro Polish** - Color grading, vignette, motion blur
 - **📱 Multi-Platform** - Export for YouTube, Twitter, Instagram, TikTok
+- **🗺️ Site Explorer** - AI navigates through multiple pages automatically
 
 ## Options
 
@@ -123,6 +173,44 @@ look demo https://myapp.com --zoom-mode follow --zoom-intensity 0.8
 look demo https://myapp.com --zoom-mode basic --max-zoom 1.3
 ```
 
+## 📱 Mobile App Recording
+
+Record demos of Android apps with Docker (no Android Studio setup required).
+
+### Quick Start
+
+```bash
+# Start the Android emulator + Appium (first run takes 2-3 min)
+look mobile-start
+
+# Check when ready
+look mobile-status
+
+# Record your app
+look mobile ./your-app.apk
+
+# Stop when done
+look mobile-stop
+```
+
+### Mobile Commands
+
+| Command | Description |
+|---------|-------------|
+| `look mobile-start` | Start Android emulator + Appium in Docker |
+| `look mobile-stop` | Stop the container |
+| `look mobile-status` | Check if ready for recording |
+| `look mobile-logs` | View container logs |
+| `look mobile <app>` | Record a mobile app demo |
+
+### Requirements
+
+- Docker Desktop installed and running
+- 8GB+ RAM available
+- Your app as an `.apk` file
+
+See [Mobile Setup Guide](./docs/MOBILE_SETUP.md) for full documentation and iOS instructions.
+
 ## How It Works
 
 ```
@@ -159,6 +247,65 @@ export OPENAI_API_KEY=sk-your-key-here
 ## License
 
 MIT
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+### Quick Start for Contributors
+
+1. **Fork the repository**
+2. **Clone your fork:**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/LooK.git
+   cd LooK
+   ```
+3. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+4. **Run tests:**
+   ```bash
+   npm test
+   look test --full
+   ```
+5. **Make your changes**
+6. **Submit a pull request**
+
+### Ways to Contribute
+
+- 🐛 **Report bugs** - [Open an issue](https://github.com/nirholas/LooK/issues)
+- 💡 **Suggest features** - [Start a discussion](https://github.com/nirholas/LooK/discussions)
+- 📖 **Improve docs** - Fix typos, add examples
+- 🔧 **Submit PRs** - Bug fixes, new features
+- ⭐ **Star the repo** - Show your support!
+
+### Development Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Run the CLI locally
+node bin/repovideo.js demo https://example.com
+
+# Start the web UI in dev mode
+npm run dev:ui
+
+# Build the web UI
+npm run build:ui
+```
+
+### Code Style
+
+- Use ES modules (`import`/`export`)
+- Prefer async/await over callbacks
+- Add JSDoc comments for public functions
+- Keep commits focused and descriptive
+
+See [ROADMAP.md](./ROADMAP.md) for planned features.
 
 ---
 

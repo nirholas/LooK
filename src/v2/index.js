@@ -12,14 +12,79 @@ import { postProcess, combineVideoAudio, exportWithPreset } from './post-process
 import { analyzeWebsite, generateScript, generateVoiceover } from './ai.js';
 import { DemoEngine, checkDependencies } from './demo-engine.js';
 import { getCursorPreset, CURSOR_PRESETS } from './cursor-renderer.js';
-// Mobile imports are lazy-loaded to avoid requiring webdriverio when not used
+// Multi-page and mobile imports are lazy-loaded to avoid requiring dependencies when not used
+// import { generateMultiPageDemo } from './multi-page-recorder.js';
 // import { MobileRecorder } from './mobile-recorder.js';
 // import { TouchTracker } from './touch-tracker.js';
 // import { autoDemo as mobileAutoDemo } from './mobile-auto-demo.js';
 // import { TouchEffectRenderer } from './touch-effects.js';
 
 /**
- * Main entry point - generate a professional demo video
+ * @typedef {import('../types/options.js').DemoOptions} DemoOptions
+ * @typedef {import('../types/options.js').DemoResult} DemoResult
+ * @typedef {import('../types/options.js').MobileDemoOptions} MobileDemoOptions
+ * @typedef {import('../types/ai.js').WebsiteAnalysis} WebsiteAnalysis
+ * @typedef {import('../types/project.js').CursorData} CursorData
+ * @typedef {import('../types/project.js').ZoomKeyframe} ZoomKeyframe
+ */
+
+/**
+ * Main entry point - generate a professional demo video from a URL.
+ * 
+ * This function performs the complete workflow:
+ * 1. Captures screenshot and analyzes website with AI vision
+ * 2. Generates voiceover script based on analysis
+ * 3. Records browser with cursor tracking
+ * 4. Applies zoom effects (smart, basic, or follow cursor)
+ * 5. Overlays cursor with click effects
+ * 6. Generates AI voiceover
+ * 7. Exports final video with preset encoding
+ * 
+ * @param {string} url - The URL to record a demo of
+ * @param {DemoOptions} [options={}] - Configuration options
+ * @param {string} [options.output='./output/demo.mp4'] - Output file path
+ * @param {number} [options.duration=25] - Target duration in seconds
+ * @param {'alloy'|'echo'|'fable'|'onyx'|'nova'|'shimmer'} [options.voice='nova'] - Voice for TTS
+ * @param {'professional'|'casual'|'energetic'|'minimal'} [options.style='professional'] - Script style
+ * @param {'youtube'|'twitter'|'instagram'|'tiktok'|'gif'} [options.preset='youtube'] - Export preset
+ * @param {boolean} [options.skipVoice=false] - Skip voiceover generation
+ * @param {boolean} [options.skipAnalysis=false] - Skip AI analysis (no voiceover)
+ * @param {boolean} [options.dryRun=false] - Only analyze, don't generate video
+ * @param {number} [options.width=1920] - Video width in pixels
+ * @param {number} [options.height=1080] - Video height in pixels
+ * @param {'none'|'basic'|'smart'|'follow'} [options.zoomMode='smart'] - Zoom mode
+ * @param {number} [options.followIntensity=0.5] - Camera follow intensity (0-1)
+ * @param {number} [options.maxZoom=2.0] - Maximum zoom level
+ * @param {number} [options.minZoom=1.0] - Minimum zoom level
+ * @param {boolean} [options.zoomOnClicks=true] - Zoom in on click events
+ * @param {boolean} [options.zoomOnHover=true] - Zoom in on hover pauses
+ * @param {'slow'|'medium'|'fast'} [options.zoomSpeed='medium'] - Zoom animation speed
+ * @param {string} [options.cursorStyle='default'] - Cursor visual style
+ * @param {number} [options.cursorSize=32] - Cursor size in pixels
+ * @param {string} [options.cursorColor='#000000'] - Cursor color (hex)
+ * @param {string|null} [options.cursorPreset=null] - Cursor preset name
+ * @param {boolean} [options.cursorGlow=false] - Add glow effect to cursor
+ * @param {'ripple'|'pulse'|'ring'|'spotlight'|'none'} [options.clickEffect='ripple'] - Click effect type
+ * @param {string} [options.clickEffectColor='#3B82F6'] - Click effect color
+ * @param {number} [options.clickEffectSize=60] - Click effect size in pixels
+ * @param {number} [options.clickEffectDuration=400] - Click effect duration in ms
+ * @returns {Promise<DemoResult>} The result containing output path, script, analysis, and tracking data
+ * @throws {Error} If FFmpeg is not installed or other critical errors occur
+ * 
+ * @example
+ * // Basic usage
+ * await generateDemo('https://example.com');
+ * 
+ * @example
+ * // With options
+ * await generateDemo('https://myapp.com', {
+ *   duration: 30,
+ *   voice: 'alloy',
+ *   style: 'casual',
+ *   preset: 'twitter',
+ *   zoomMode: 'follow',
+ *   maxZoom: 2.5
+ * });
  */
 export async function generateDemo(url, options = {}) {
   const {
@@ -250,7 +315,16 @@ export async function generateDemo(url, options = {}) {
 }
 
 /**
- * Quick demo - minimal options
+ * Quick demo - minimal configuration for fast video generation.
+ * 
+ * Generates a short, casual demo optimized for Twitter/X with sensible defaults.
+ * Useful for quickly testing a URL or generating a social media preview.
+ * 
+ * @param {string} url - The URL to record a demo of
+ * @returns {Promise<DemoResult>} The generated demo result
+ * 
+ * @example
+ * await quickDemo('https://myapp.com');
  */
 export async function quickDemo(url) {
   return generateDemo(url, {
@@ -261,7 +335,17 @@ export async function quickDemo(url) {
 }
 
 /**
- * GitHub repo demo
+ * Generate a demo video for a GitHub repository page.
+ * 
+ * Records the GitHub repository page with technical-style narration.
+ * Useful for showcasing open source projects and generating README videos.
+ * 
+ * @param {string} repoUrl - The GitHub repository URL (e.g., 'https://github.com/user/repo')
+ * @param {DemoOptions} [options={}] - Additional options to override defaults
+ * @returns {Promise<DemoResult>} The generated demo result
+ * 
+ * @example
+ * await repoDemo('https://github.com/facebook/react');
  */
 export async function repoDemo(repoUrl, options = {}) {
   // Convert github URL to actual site if deployed
@@ -275,8 +359,31 @@ export async function repoDemo(repoUrl, options = {}) {
 }
 
 /**
- * Generate a professional demo video of a mobile app using Appium
- * Note: Requires webdriverio and Appium to be installed separately
+ * Generate a professional demo video of a mobile app using Appium.
+ * 
+ * Records iOS or Android apps with touch gesture visualization and tracking.
+ * Requires WebDriverIO and Appium to be installed and configured separately.
+ * Supports iPhone/iPad simulators and Android emulators.
+ * 
+ * @param {string} appPath - Path to the app bundle (.app/.ipa for iOS, .apk for Android)
+ * @param {MobileDemoOptions} [options={}] - Mobile demo options
+ * @param {'ios'|'android'} [options.platform='ios'] - Mobile platform
+ * @param {string} [options.device='iPhone 15 Pro'] - Device name
+ * @param {string} [options.output='./output/mobile-demo.mp4'] - Output path
+ * @param {number} [options.duration=25] - Duration in seconds
+ * @param {'portrait'|'landscape'} [options.orientation='portrait'] - Screen orientation
+ * @param {'circle'|'finger'|'ripple'|'dot'} [options.touchIndicator='circle'] - Touch indicator style
+ * @param {string} [options.touchColor='rgba(255,255,255,0.8)'] - Touch indicator color
+ * @param {boolean} [options.showSwipeTrail=true] - Show swipe gesture trails
+ * @returns {Promise<DemoResult & { touchData: object }>} Demo result with touch tracking data
+ * @throws {Error} If Appium is not running or device connection fails
+ * 
+ * @example
+ * await generateMobileDemo('/path/to/MyApp.app', {
+ *   platform: 'ios',
+ *   device: 'iPhone 15',
+ *   duration: 30
+ * });
  */
 export async function generateMobileDemo(appPath, options = {}) {
   // Lazy load mobile-specific dependencies
@@ -482,8 +589,23 @@ export async function generateMobileDemo(appPath, options = {}) {
 }
 
 /**
- * Reliable demo generation using new DemoEngine
- * This is a more robust alternative that handles edge cases better
+ * Reliable demo generation using the new DemoEngine.
+ * 
+ * An improved implementation that handles edge cases better than generateDemo.
+ * Uses a more robust recording and processing pipeline with better error handling.
+ * Recommended for production use and automated pipelines.
+ * 
+ * @param {string} url - The URL to record a demo of
+ * @param {DemoOptions} [options={}] - Configuration options (same as generateDemo)
+ * @returns {Promise<{ success: boolean, output: string, script: string|null, analysis: WebsiteAnalysis|null }>}
+ * @throws {Error} If FFmpeg is not installed or URL is inaccessible
+ * 
+ * @example
+ * const result = await generateDemoV2('https://myapp.com', {
+ *   duration: 30,
+ *   preset: 'youtube'
+ * });
+ * console.log(`Video saved: ${result.output}`);
  */
 export async function generateDemoV2(url, options = {}) {
   const {
@@ -658,3 +780,15 @@ export async function generateDemoV2(url, options = {}) {
     throw error;
   }
 }
+
+/**
+ * Generate a multi-page walkthrough demo that explores an entire website
+ * Lazily loads the multi-page recorder to avoid loading dependencies when not used
+ */
+export async function generateWalkthrough(url, options = {}) {
+  const { generateMultiPageDemo } = await import('./multi-page-recorder.js');
+  return generateMultiPageDemo(url, options);
+}
+
+// Re-export for direct access
+export { SiteExplorer, generateDemoJourney } from './site-explorer.js';

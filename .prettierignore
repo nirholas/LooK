@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+coverage/
+ui/dist/
+*.mp4
+*.mp3
+*.webm
+*.gif
+package-lock.json

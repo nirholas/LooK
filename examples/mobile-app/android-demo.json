@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Android App Demo",
+  "description": "Scripted actions for mobile app demo recording",
+  "platform": "android",
+  "device": "Pixel 7",
+  "orientation": "portrait",
+  "output": {
+    "path": "./output/android-demo.mp4",
+    "preset": "youtube",
+    "addDeviceFrame": true,
+    "frameStyle": "modern"
+  },
+  "timing": {
+    "duration": 30,
+    "actionDelay": 500
+  },
+  "voice": {
+    "voice": "nova",
+    "style": "casual"
+  },
+  "touchEffects": {
+    "indicator": "circle",
+    "color": "rgba(255, 255, 255, 0.8)",
+    "size": 80,
+    "showSwipeTrail": true
+  },
+  "actions": [
+    {
+      "type": "launch",
+      "comment": "App launches with splash screen"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Wait for splash screen"
+    },
+    {
+      "type": "tap",
+      "x": 540,
+      "y": 800,
+      "comment": "Tap Get Started button"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "swipe",
+      "from": { "x": 900, "y": 600 },
+      "to": { "x": 180, "y": 600 },
+      "duration": 300,
+      "comment": "Swipe through onboarding"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "swipe",
+      "from": { "x": 900, "y": 600 },
+      "to": { "x": 180, "y": 600 },
+      "duration": 300,
+      "comment": "Continue onboarding"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "tap",
+      "x": 540,
+      "y": 1800,
+      "comment": "Tap Continue"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "tap",
+      "selector": "~login_button",
+      "comment": "Tap login using accessibility ID"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "type",
+      "selector": "~email_input",
+      "text": "demo@example.com",
+      "comment": "Enter email"
+    },
+    {
+      "type": "tap",
+      "selector": "~password_input",
+      "comment": "Focus password field"
+    },
+    {
+      "type": "type",
+      "selector": "~password_input",
+      "text": "password123",
+      "comment": "Enter password"
+    },
+    {
+      "type": "tap",
+      "selector": "~submit_button",
+      "comment": "Submit login"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Wait for login to complete"
+    },
+    {
+      "type": "scroll",
+      "direction": "down",
+      "amount": 500,
+      "comment": "Scroll through home feed"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "tap",
+      "x": 540,
+      "y": 500,
+      "comment": "Tap on first item"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "View item details"
+    },
+    {
+      "type": "tap",
+      "selector": "~add_to_cart",
+      "comment": "Add to cart"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "tap",
+      "selector": "~cart_icon",
+      "comment": "Open cart"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show cart contents"
+    }
+  ],
+  "metadata": {
+    "appPackage": "com.example.myapp",
+    "appActivity": ".MainActivity",
+    "automationName": "UiAutomator2"
+  }
+}

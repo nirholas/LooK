@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "E-commerce Product Demo",
+  "description": "Showcase an e-commerce site's shopping experience",
+  "url": "https://your-store.com",
+  "output": {
+    "path": "./output/ecommerce-demo.mp4",
+    "preset": "youtube"
+  },
+  "timing": {
+    "duration": 45
+  },
+  "voice": {
+    "voice": "nova",
+    "style": "casual"
+  },
+  "cursor": {
+    "style": "pointer",
+    "size": 32,
+    "preset": "dark"
+  },
+  "clickEffects": {
+    "effect": "ripple",
+    "color": "#10B981",
+    "size": 60
+  },
+  "zoom": {
+    "mode": "smart",
+    "maxZoom": 1.8
+  },
+  "interactions": [
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show homepage hero"
+    },
+    {
+      "type": "scroll",
+      "to": "featured-products",
+      "comment": "Scroll to products"
+    },
+    {
+      "type": "hover",
+      "selector": ".product-card:first-child",
+      "duration": 1500
+    },
+    {
+      "type": "click",
+      "selector": ".product-card:first-child",
+      "comment": "Click first product"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Product page loads"
+    },
+    {
+      "type": "scroll",
+      "to": "product-images",
+      "comment": "Show product gallery"
+    },
+    {
+      "type": "click",
+      "selector": ".thumbnail:nth-child(2)",
+      "comment": "Click second image"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "scroll",
+      "to": "add-to-cart",
+      "comment": "Scroll to CTA"
+    },
+    {
+      "type": "click",
+      "selector": ".size-selector option:nth-child(2)",
+      "comment": "Select size"
+    },
+    {
+      "type": "click",
+      "selector": ".add-to-cart-button",
+      "comment": "Add to cart"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Cart animation"
+    },
+    {
+      "type": "click",
+      "selector": ".cart-icon",
+      "comment": "Open cart"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show cart contents"
+    }
+  ]
+}

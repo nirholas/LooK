@@ -27,14 +27,19 @@ export class CursorTracker {
 
   /**
    * Record a click event
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate  
+   * @param {number} timestamp - Event timestamp
+   * @param {Object} [element] - Optional element metadata for smart markers
    */
-  recordClick(x, y, timestamp = Date.now()) {
+  recordClick(x, y, timestamp = Date.now(), element = null) {
     if (!this.startTime) this.startTime = timestamp;
     
     this.clicks.push({
       x,
       y,
-      t: timestamp - this.startTime
+      t: timestamp - this.startTime,
+      element: element || null
     });
   }
 
