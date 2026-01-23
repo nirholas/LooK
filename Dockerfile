@@ -49,9 +49,8 @@ COPY bin/ ./bin/
 # Create data directory
 RUN mkdir -p /root/.repovideo/projects
 
-# Expose port
-ENV PORT=3847
+# Expose port (Railway sets PORT dynamically)
 EXPOSE 3847
 
-# Start server
-CMD ["node", "bin/repovideo.js", "serve", "--port", "3847"]
+# Start server (uses PORT env var from Railway, defaults to 3847)
+CMD ["node", "bin/repovideo.js", "serve"]
