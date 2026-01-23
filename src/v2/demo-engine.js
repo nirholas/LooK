@@ -407,6 +407,131 @@ export class DemoEngine {
   }
 
   /**
+   * Execute a content-aware demo based on analyzed page content.
+   * Uses content analysis to focus on high-value sections and trigger demo moments.
+   * 
+   * @param {import('./content-analyzer.js').PageContent} contentAnalysis - Analyzed content
+   * @param {Object} [options] - Demo options
+   * @param {number} [options.minDemoScore=50] - Minimum score for sections to include
+   * @param {boolean} [options.triggerMoments=true] - Whether to trigger demo moments
+   */
+  async contentAwareDemo(contentAnalysis, options = {}) {
+    const { minDemoScore = 50, triggerMoments = true } = options;
+    
+    // Start with cursor in center
+    this.recordCursor(this.width / 2, this.height / 3);
+    await this.page.mouse.move(this.width / 2, this.height / 3);
+    await this.sleep(1500);
+
+    // Get sections to highlight, sorted by demo score
+    const sectionsToShow = contentAnalysis.sections
+      .filter(s => s.demoScore >= minDemoScore && !s.skipReason)
+      .sort((a, b) => b.demoScore - a.demoScore)
+      .slice(0, 6); // Limit to top 6 sections
+
+    // Calculate time budget per section
+    const totalDuration = this.duration - 4000; // Reserve 4s for intro/outro
+    const timePerSection = sectionsToShow.length > 0 
+      ? totalDuration / sectionsToShow.length 
+      : totalDuration;
+
+    // Highlight hero section first if available
+    const heroSection = sectionsToShow.find(s => s.type === 'hero');
+    if (heroSection) {
+      await this.highlightSection(heroSection, Math.min(timePerSection, 5000));
+    }
+
+    // Process other sections
+    for (const section of sectionsToShow) {
+      if (section === heroSection) continue; // Skip hero, already shown
+      await this.highlightSection(section, timePerSection);
+    }
+
+    // Trigger demo moments if enabled
+    if (triggerMoments && contentAnalysis.demoMoments.length > 0) {
+      for (const moment of contentAnalysis.demoMoments.slice(0, 3)) {
+        await this.triggerDemoMoment(moment);
+      }
+    }
+
+    // Scroll back to top
+    await this.smoothScrollTo(0, 1000);
+    await this.sleep(800);
+    
+    // Final cursor position
+    await this.smoothMoveTo(this.width / 2, this.height / 2, 400);
+    await this.sleep(500);
+  }
+
+  /**
+   * Highlight a specific content section
+   * 
+   * @param {import('./content-analyzer.js').ContentSection} section - Section to highlight
+   * @param {number} [duration=3000] - Time to spend on section in ms
+   */
+  async highlightSection(section, duration = 3000) {
+    const pixelBounds = section.getPixelBounds(this.width, this.height);
+    const center = section.getCenter(this.width, this.height);
+    
+    // Scroll section into view
+    const scrollY = Math.max(0, pixelBounds.y - this.height * 0.3);
+    await this.smoothScrollTo(scrollY, 800);
+    await this.sleep(500);
+    
+    // Move cursor to section center
+    await this.smoothMoveTo(center.x, Math.min(center.y - scrollY, this.height * 0.7), 400);
+    await this.sleep(duration * 0.4);
+    
+    // Explore the section
+    const exploreX = center.x + (Math.random() - 0.5) * pixelBounds.width * 0.4;
+    const exploreY = Math.min((center.y - scrollY) + (Math.random() - 0.5) * pixelBounds.height * 0.3, this.height * 0.8);
+    await this.smoothMoveTo(exploreX, exploreY, 300);
+    await this.sleep(duration * 0.4);
+    
+    // Optional click if section has interactives
+    if (section.interactives && section.interactives.length > 0 && Math.random() > 0.5) {
+      this.recordClick(exploreX, exploreY);
+      await this.sleep(200);
+    }
+    
+    await this.sleep(duration * 0.2);
+  }
+
+  /**
+   * Trigger a demo moment (animation, interaction, etc)
+   * 
+   * @param {import('./content-analyzer.js').DemoMomentData} moment - Moment to trigger
+   */
+  async triggerDemoMoment(moment) {
+    const x = (moment.location.x / 100) * this.width;
+    const y = (moment.location.y / 100) * this.height;
+    
+    // Move cursor to moment location
+    await this.smoothMoveTo(x, y, 300);
+    await this.sleep(500);
+    
+    // Trigger based on type
+    switch (moment.trigger) {
+      case 'hover':
+        await this.page.mouse.move(x, y);
+        await this.sleep(1500);
+        break;
+      case 'click':
+        await this.page.mouse.click(x, y);
+        this.recordClick(x, y);
+        await this.sleep(1000);
+        break;
+      case 'scroll':
+        // Small scroll to trigger reveal animation
+        await this.smoothScrollTo(y - this.height * 0.5, 600);
+        await this.sleep(1000);
+        break;
+      default:
+        await this.sleep(1000);
+    }
+  }
+
+  /**
    * Stop recording and collect data
    */
   async stopRecording() {

@@ -145,25 +145,40 @@ export async function analyzeWebsite(screenshotBase64, metadata = {}) {
   
   const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
+    response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
         content: `You are an expert at analyzing websites and creating engaging demo video scripts.
-Analyze the screenshot and return JSON with:
+Analyze the screenshot and return a JSON object with this exact structure:
 {
   "name": "Product/site name",
   "tagline": "One-line value proposition",
   "description": "2-3 sentence description",
   "targetAudience": "Who this is for",
+  "painPoint": "The problem this product solves",
+  "uniqueValue": "What makes this different from alternatives",
   "keyFeatures": ["feature 1", "feature 2", "feature 3"],
   "focusPoints": [
-    {"element": "description", "x": 0-100 (%), "y": 0-100 (%), "importance": "high|medium"}
+    {"element": "description", "x": 0-100 (%), "y": 0-100 (%), "importance": "high|medium", "reason": "why to focus here"}
   ],
   "suggestedActions": [
     {"type": "scroll|click|hover", "target": "description", "reason": "why"}
   ],
-  "tone": "professional|casual|technical|friendly"
-}`
+  "demoJourney": [
+    {"step": 1, "action": "type", "target": "what", "duration": ms, "narration": "what to say"}
+  ],
+  "suggestedHook": "Attention-grabbing opening line",
+  "callToAction": "What viewers should do after watching",
+  "tone": "professional|casual|technical|friendly",
+  "visualStyle": "minimal|colorful|dark|light|corporate"
+}
+
+Focus on identifying:
+1. The primary call-to-action buttons
+2. Key feature sections
+3. Hero content and value proposition
+4. Navigation structure`
       },
       {
         role: 'user',
@@ -176,7 +191,7 @@ Analyze the screenshot and return JSON with:
             type: 'image_url',
             image_url: { 
               url: `data:${mimeType};base64,${base64}`,
-              detail: 'low'  // Use low detail for faster processing
+              detail: 'high'  // Use high detail for better element detection
             }
           }
         ]
@@ -203,6 +218,150 @@ Analyze the screenshot and return JSON with:
     suggestedActions: [],
     tone: 'professional'
   };
+}
+
+/**
+ * Extract JSON from a string that may contain markdown code blocks or extra text.
+ * 
+ * @param {string} text - Text potentially containing JSON
+ * @returns {string} Extracted JSON string
+ * @private
+ */
+function extractJSON(text) {
+  // Remove markdown code blocks if present
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    text = codeBlockMatch[1];
+  }
+  
+  // Find JSON object or array
+  const jsonMatch = text.match(/[\[{][\s\S]*[\]}]/);
+  return jsonMatch ? jsonMatch[0] : text;
+}
+
+/**
+ * @typedef {Object} DeepContentAnalysis
+ * @property {Array<{type: string, bounds: Object, headline: string, importance: string, demoValue: number, visualInterest: string, suggestedDuration: number}>} sections
+ * @property {{problem: string, solution: string, keyBenefit: string, proofPoints: string[]}} productStory
+ * @property {Array<{type: string, location: {x: number, y: number}, description: string, trigger: string}>} demoMoments
+ * @property {Array<{reason: string, bounds: Object}>} skipRegions
+ * @property {string} suggestedNarrative
+ * @property {string} transitionHint
+ */
+
+/**
+ * Deep semantic analysis of a page screenshot.
+ * 
+ * Performs comprehensive analysis including section identification,
+ * product story extraction, demo moments, and skip regions.
+ * Uses GPT-4o vision with high detail for accurate element detection.
+ * 
+ * @param {string} screenshot - Base64-encoded screenshot image
+ * @param {Object} [options={}] - Analysis options
+ * @param {number} [options.duration=30] - Target demo duration in seconds
+ * @param {'features'|'pricing'|'overview'|'technical'} [options.focus='features'] - Analysis focus
+ * @returns {Promise<DeepContentAnalysis>} Detailed content analysis
+ * @throws {Error} If OpenAI API key is not set or API call fails
+ * 
+ * @example
+ * const screenshot = await page.screenshot({ encoding: 'base64' });
+ * const analysis = await deepAnalyzeContent(screenshot, {
+ *   duration: 30,
+ *   focus: 'features'
+ * });
+ * console.log(analysis.sections);
+ */
+export async function deepAnalyzeContent(screenshot, options = {}) {
+  const { duration = 30, focus = 'features' } = options;
+  
+  // Compress image for API
+  const { base64, mimeType } = await compressForVision(screenshot);
+  
+  const response = await getOpenAI().chat.completions.create({
+    model: 'gpt-4o',
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content: `You are an expert at analyzing product websites for demo videos.
+
+Analyze this screenshot and return detailed JSON with this exact structure:
+{
+  "sections": [
+    {
+      "type": "hero|features|pricing|testimonials|cta|footer|header|nav|content",
+      "bounds": {"x": 0-100, "y": 0-100, "width": 0-100, "height": 0-100},
+      "headline": "main text in section",
+      "importance": "critical|high|medium|low|skip",
+      "demoValue": 0-100,
+      "visualInterest": "description of notable visual elements",
+      "suggestedDuration": 2-8
+    }
+  ],
+  "productStory": {
+    "problem": "what problem is being solved (or empty if unclear)",
+    "solution": "how it's solved",
+    "keyBenefit": "main value proposition",
+    "proofPoints": ["social proof elements like testimonials, stats"]
+  },
+  "demoMoments": [
+    {
+      "type": "animation|interaction|visual",
+      "location": {"x": 0-100, "y": 0-100},
+      "description": "what to show/highlight",
+      "trigger": "how to trigger it (hover, click, scroll, etc)"
+    }
+  ],
+  "skipRegions": [
+    {"reason": "why skip (e.g., legal, social links, repetitive)", "bounds": {"x": 0-100, "y": 0-100, "width": 0-100, "height": 0-100}}
+  ],
+  "suggestedNarrative": "brief story arc for presenting this page",
+  "transitionHint": "suggestion for what page/section should come next"
+}
+
+Guidelines:
+- Bounds are percentages of viewport (0-100)
+- demoValue: hero=80-100, features=70-90, pricing=60-80, testimonials=50-70, footer=0-20
+- suggestedDuration: hero 3-5s, features 2-4s per item, skip regions 0s
+- Focus on elements that visually demonstrate the product's value
+- Identify animations, hover effects, or interactive elements worth triggering`
+      },
+      {
+        role: 'user',
+        content: [
+          { 
+            type: 'text', 
+            text: `Analyze this page for a ${duration}-second demo. Focus: ${focus}. Identify sections, product story, demo moments, and what to skip.`
+          },
+          { 
+            type: 'image_url', 
+            image_url: { 
+              url: `data:${mimeType};base64,${base64}`,
+              detail: 'high'
+            } 
+          }
+        ]
+      }
+    ],
+    max_tokens: 2000
+  });
+
+  const content = response.choices[0].message.content;
+  
+  try {
+    return JSON.parse(extractJSON(content));
+  } catch (e) {
+    console.warn('Failed to parse deep analysis:', e.message);
+    // Return minimal valid structure
+    return {
+      sections: [],
+      productStory: { problem: '', solution: '', keyBenefit: '', proofPoints: [] },
+      demoMoments: [],
+      skipRegions: [],
+      suggestedNarrative: '',
+      transitionHint: null
+    };
+  }
 }
 
 /**

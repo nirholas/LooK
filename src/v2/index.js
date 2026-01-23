@@ -12,6 +12,8 @@ import { postProcess, combineVideoAudio, exportWithPreset } from './post-process
 import { analyzeWebsite, generateScript, generateVoiceover } from './ai.js';
 import { DemoEngine, checkDependencies } from './demo-engine.js';
 import { getCursorPreset, CURSOR_PRESETS } from './cursor-renderer.js';
+// Enhanced AI module with advanced capabilities
+import * as aiEnhanced from './ai-enhanced.js';
 // Multi-page and mobile imports are lazy-loaded to avoid requiring dependencies when not used
 // import { generateMultiPageDemo } from './multi-page-recorder.js';
 // import { MobileRecorder } from './mobile-recorder.js';
@@ -792,3 +794,22 @@ export async function generateWalkthrough(url, options = {}) {
 
 // Re-export for direct access
 export { SiteExplorer, generateDemoJourney } from './site-explorer.js';
+export { LiveRecorder, createLiveRecorder } from './live-recorder.js';
+
+// Demo Orchestrator - Intelligent multi-page demo generation
+export { DemoOrchestrator, generateIntelligentDemo } from './demo-orchestrator.js';
+export { DemoPlan } from './demo-plan.js';
+export { PacingController, calculateAdaptiveTiming } from './pacing-controller.js';
+export { ErrorRecovery } from './error-recovery.js';
+export { TransitionManager } from './transition-manager.js';
+
+// Export enhanced AI module for advanced usage
+export {
+  analyzeWebsiteEnhanced,
+  extractPageElements,
+  captureFullPage,
+  planDemoWithCoT,
+  generateScriptEnhanced,
+  generateSmartActions,
+  getAvailableProviders
+} from './ai-enhanced.js';

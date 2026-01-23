@@ -110,6 +110,130 @@ program
     }
   });
 
+// Live: Real-time recording with preview and control
+program
+  .command('live <url>')
+  .description('Start a live recording session with real-time preview')
+  .option('-d, --duration <seconds>', 'Maximum duration', '30')
+  .option('-o, --output <path>', 'Output file', './live-demo.mp4')
+  .option('--width <pixels>', 'Recording width', '1920')
+  .option('--height <pixels>', 'Recording height', '1080')
+  .option('--preview-fps <fps>', 'Preview frame rate', '10')
+  .option('--no-auto', 'Disable automatic demo (manual control only)')
+  .option('--headless', 'Run browser in headless mode (no visible window)')
+  .option('--port <port>', 'WebSocket port for remote control', '3847')
+  .action(async (url, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('📺 Live recording mode\n'));
+    
+    try {
+      const { LiveRecorder } = await import('../src/v2/live-recorder.js');
+      const { startServer } = await import('../src/v2/server.js');
+      
+      // Start the server for WebSocket connectivity
+      const port = parseInt(options.port);
+      console.log(chalk.dim(`  Starting server on port ${port}...`));
+      const { wss } = await startServer({ port });
+      
+      console.log(chalk.green(`  ✓ Server running at http://localhost:${port}`));
+      console.log(chalk.green(`  ✓ WebSocket available at ws://localhost:${port}`));
+      console.log();
+      
+      // Create recorder
+      const recorder = new LiveRecorder({
+        width: parseInt(options.width),
+        height: parseInt(options.height),
+        duration: parseInt(options.duration) * 1000,
+        headless: options.headless || false,
+        previewFps: parseInt(options.previewFps),
+        autoDemo: options.auto !== false
+      });
+      
+      // Session ID for this recording
+      const sessionId = `cli-${Date.now()}`;
+      
+      // Set up event handlers
+      recorder.on('stateChange', (state) => {
+        const stateEmoji = {
+          idle: '⏹️',
+          recording: '🔴',
+          paused: '⏸️',
+          stopped: '⏹️'
+        };
+        console.log(chalk.yellow(`  ${stateEmoji[state.state] || '•'} State: ${state.state} (${Math.round(state.elapsed / 1000)}s)`));
+      });
+      
+      recorder.on('click', (click) => {
+        console.log(chalk.dim(`  🖱️ Click at (${click.x}, ${click.y})`));
+      });
+      
+      recorder.on('frame', (frame) => {
+        // Broadcast to WebSocket clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send(JSON.stringify({
+              type: 'live-frame',
+              sessionId,
+              data: frame,
+              timestamp: Date.now()
+            }));
+          }
+        });
+      });
+      
+      recorder.on('complete', async (result) => {
+        console.log(chalk.green('\n  ✅ Recording complete!'));
+        console.log(chalk.dim(`  Duration: ${Math.round(result.duration / 1000)}s`));
+        console.log(chalk.dim(`  Frames: ${result.cursorData?.length || 0}`));
+        
+        if (result.videoPath) {
+          // Post-process to output
+          const { postProcess, combineVideoAudio, exportWithPreset } = await import('../src/v2/post-process.js');
+          console.log(chalk.cyan('\n  🎬 Processing video...'));
+          
+          const finalOutput = options.output;
+          await exportWithPreset(result.videoPath, finalOutput, 'youtube', {
+            width: parseInt(options.width),
+            height: parseInt(options.height)
+          });
+          
+          console.log(chalk.green(`\n  ✅ Saved to: ${finalOutput}`));
+        }
+        
+        process.exit(0);
+      });
+      
+      recorder.on('error', (error) => {
+        console.error(chalk.red(`\n  ❌ Error: ${error.message}`));
+        process.exit(1);
+      });
+      
+      // Instructions
+      console.log(chalk.white('  Controls:'));
+      console.log(chalk.dim('    • Press Ctrl+C to stop recording'));
+      console.log(chalk.dim(`    • Connect to ws://localhost:${port} for remote control`));
+      console.log(chalk.dim('    • Open http://localhost:' + port + ' for the UI\n'));
+      
+      console.log(chalk.cyan(`  🎬 Starting recording of ${url}...\n`));
+      
+      // Handle Ctrl+C
+      process.on('SIGINT', async () => {
+        console.log(chalk.yellow('\n  ⏹️ Stopping recording...'));
+        await recorder.stop();
+      });
+      
+      // Start recording
+      await recorder.start(url);
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) {
+        console.error(e);
+      }
+      process.exit(1);
+    }
+  });
+
 // Quick: Fast demo with minimal options
 program
   .command('quick <url>')

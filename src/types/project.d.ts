@@ -2,7 +2,7 @@
  * Project-related type definitions
  */
 
-import type { WebsiteAnalysis } from './ai.js';
+import type { WebsiteAnalysis } from './ai';
 
 /**
  * Zoom settings for the video

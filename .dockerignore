@@ -1,0 +1,11 @@
+node_modules
+.git
+*.log
+*.md
+tests/
+coverage/
+.env.local
+.env.*.local
+*.webm
+*.mp4
+*.wav
