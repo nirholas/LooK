@@ -5,6 +5,3 @@ builder = "DOCKERFILE"
 startCommand = "node bin/repovideo.js serve"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-[variables]
-PORT = "3847"
