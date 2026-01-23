@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: look-demo
+    runtime: docker
+    plan: starter  # $7/mo, or use 'free' (has cold starts)
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually in dashboard
+      - key: PORT
+        value: 3847
+    disk:
+      name: look-data
+      mountPath: /root/.repovideo
+      sizeGB: 1

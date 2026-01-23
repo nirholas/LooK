@@ -152,7 +152,19 @@ body {
 
 .analyze-form {
   display: flex;
+  flex-direction: column;
   gap: 12px;
+  margin-bottom: 24px;
+}
+
+.analyze-form .form-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.form-hint {
+  color: var(--text-muted);
+  font-size: 14px;
   margin-bottom: 48px;
 }
 
@@ -226,6 +238,66 @@ body {
 .editor-layout {
   display: flex;
   height: 100%;
+}
+
+/* Live Preview Panel */
+.live-preview-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: var(--bg-primary);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.live-preview-panel.hidden {
+  display: none;
+}
+
+.live-preview-container {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.editor-layout.live-mode .preview-area,
+.editor-layout.live-mode .sidebar {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Paused mode - allow editing sidebar */
+.editor-layout.live-paused-mode .sidebar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.editor-layout.live-paused-mode .preview-area {
+  opacity: 0.5;
+}
+
+/* Live preview pulse indicator */
+.live-preview-panel::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
 /* Preview area */

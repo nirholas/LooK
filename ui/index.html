@@ -37,10 +37,16 @@
               required
               class="url-input"
             >
-            <button type="submit" class="btn btn-primary btn-large">
-              <span class="icon">🔍</span> Analyze
-            </button>
+            <div class="form-buttons">
+              <button type="submit" class="btn btn-primary btn-large">
+                <span class="icon">🔍</span> Analyze
+              </button>
+              <button type="button" id="live-record-btn" class="btn btn-secondary btn-large">
+                <span class="icon">🔴</span> Live Record
+              </button>
+            </div>
           </form>
+          <p class="form-hint">Use <strong>Analyze</strong> for AI-driven automatic recording, or <strong>Live Record</strong> to watch and control in real-time.</p>
 
           <div id="recent-projects" class="recent-projects">
             <h3>Recent Projects</h3>
@@ -52,6 +58,11 @@
       <!-- Editor screen (hidden initially) -->
       <section id="editor-screen" class="editor-screen hidden">
         <div class="editor-layout">
+          <!-- Live preview panel (shown during live recording) -->
+          <div id="live-preview-panel" class="live-preview-panel hidden">
+            <div id="live-preview-container" class="live-preview-container"></div>
+          </div>
+          
           <!-- Preview area -->
           <div class="preview-area">
             <div class="video-container">

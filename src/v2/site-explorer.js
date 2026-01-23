@@ -3,11 +3,26 @@
  * 
  * Uses AI to understand site structure, prioritize pages to visit,
  * and create a coherent walkthrough of an entire product.
+ * 
+ * Features:
+ * - Graph-based navigation structure for tracking page relationships
+ * - SPA detection and handling (React, Vue, Angular, etc.)
+ * - Multiple exploration strategies (breadth-first, depth-first, priority, AI-guided)
+ * - Sub-flow exploration with back navigation support
  */
 
 import OpenAI from 'openai';
 import { chromium } from 'playwright';
 import { URL } from 'url';
+import { ContentAnalyzer, ContentDeduplicator } from './content-analyzer.js';
+import { NavigationGraph, NavigationNode, createNodeId } from './navigation-graph.js';
+import { SPADetector, generateStateHash, waitForSPAReady } from './spa-detector.js';
+import { 
+  ExplorationStrategy, 
+  ExplorationStrategyType, 
+  ExplorationAction,
+  createDemoStrategy 
+} from './exploration-strategy.js';
 
 let openai = null;
 
@@ -36,6 +51,8 @@ class SitePage {
     this.visited = false;
     this.screenshot = null;
     this.analysis = null;
+    /** @type {import('./content-analyzer.js').PageContent|null} */
+    this.contentAnalysis = null;
   }
 }
 
@@ -54,6 +71,37 @@ export class SiteExplorer {
     this.pages = new Map();
     this.browser = null;
     this.page = null;
+    
+    /** @type {ContentDeduplicator} */
+    this.deduplicator = new ContentDeduplicator();
+    
+    /** @type {ContentAnalyzer|null} */
+    this.contentAnalyzer = null;
+    
+    // New graph-based navigation system
+    /** @type {NavigationGraph} Navigation graph for tracking site structure */
+    this.graph = new NavigationGraph();
+    
+    /** @type {SPADetector|null} SPA detection and handling */
+    this.spaDetector = null;
+    
+    /** @type {ExplorationStrategy|null} Exploration strategy */
+    this.strategy = null;
+    
+    /** @type {string} Exploration strategy type */
+    this.strategyType = options.strategy || ExplorationStrategyType.PRIORITY;
+    
+    /** @type {string} Focus area for exploration */
+    this.focus = options.focus || 'features';
+    
+    /** @type {boolean} Whether the site is a SPA */
+    this.isSPA = false;
+    
+    /** @type {Array<string>} Navigation history for back navigation */
+    this.navigationHistory = [];
+    
+    /** @type {boolean} Enable graph-based exploration (new mode) */
+    this.useGraphExploration = options.useGraphExploration ?? false;
   }
 
   /**
@@ -63,6 +111,12 @@ export class SiteExplorer {
     this.browser = await chromium.launch({ headless: true });
     this.page = await this.browser.newPage({
       viewport: { width: this.width, height: this.height }
+    });
+    
+    // Initialize SPA detector
+    this.spaDetector = new SPADetector(this.page, {
+      stateChangeTimeout: this.timeout,
+      navigationTimeout: this.timeout
     });
   }
 
@@ -78,11 +132,23 @@ export class SiteExplorer {
 
   /**
    * Explore a website and build a prioritized sitemap
+   * @param {string} startUrl - URL to start exploration from
+   * @returns {Promise<Object>} Site map with explored pages
    */
   async explore(startUrl) {
     this.baseUrl = startUrl;
     this.baseDomain = new URL(startUrl).hostname;
+    
+    // Set up graph metadata
+    this.graph.metadata.baseUrl = this.baseUrl;
+    this.graph.metadata.baseDomain = this.baseDomain;
 
+    // Use new graph-based exploration if enabled
+    if (this.useGraphExploration) {
+      return this.exploreWithGraph(startUrl);
+    }
+
+    // Legacy linear exploration
     // Start with the homepage
     await this.visitPage(startUrl, 0);
 
@@ -101,9 +167,333 @@ export class SiteExplorer {
   }
 
   /**
-   * Visit a page and extract information
+   * Graph-based exploration - builds a navigation graph with sub-flow support
+   * @param {string} startUrl - URL to start exploration from
+   * @returns {Promise<Object>} Site map with navigation graph
    */
-  async visitPage(url, depth) {
+  async exploreWithGraph(startUrl) {
+    // Detect if site is a SPA
+    await this.page.goto(startUrl, { 
+      waitUntil: 'networkidle', 
+      timeout: this.timeout 
+    });
+    
+    this.isSPA = await this.spaDetector.isSPA();
+    
+    if (this.isSPA) {
+      const framework = await this.spaDetector.detectFramework();
+      console.log(`Detected SPA: ${framework.name}${framework.version ? ` v${framework.version}` : ''}`);
+    }
+    
+    // Create root node
+    const stateHash = this.isSPA ? await this.spaDetector.getStateHash() : null;
+    const rootNode = await this.createNavigationNode(startUrl, null, 0, stateHash);
+    
+    this.graph.addNode(rootNode);
+    this.graph.setRoot(rootNode.id);
+    
+    // Initialize exploration strategy
+    this.strategy = createDemoStrategy(this.graph, {
+      maxDepth: this.maxDepth,
+      maxTotalNodes: this.maxPages,
+      focus: this.focus,
+      baseDomain: this.baseDomain
+    });
+    this.strategy.setStrategy(this.strategyType);
+    
+    // Start graph exploration from root
+    await this.exploreFromNode(rootNode);
+    
+    // Return combined sitemap
+    return {
+      ...this.getSiteMap(),
+      graph: this.graph,
+      isSPA: this.isSPA,
+      explorationStats: this.strategy.getStats()
+    };
+  }
+
+  /**
+   * Recursively explore from a node using the configured strategy
+   * @param {NavigationNode} node - Current node to explore from
+   */
+  async exploreFromNode(node) {
+    // Visit and analyze the current page
+    node.recordVisit();
+    this.navigationHistory.push(node.id);
+    
+    // Capture page data for the legacy sitemap
+    const sitePage = await this.capturePageData(node.url, node.depth);
+    if (sitePage) {
+      node.unexploredLinks = sitePage.links.map(link => ({
+        text: link.text,
+        href: link.url,
+        selector: `a[href="${link.url}"]`,
+        isNav: link.isNav
+      }));
+    }
+    
+    // Explore using strategy
+    let safetyCounter = 0;
+    const maxIterations = this.maxPages * 2; // Prevent infinite loops
+    
+    while (node.hasUnexploredLinks() && safetyCounter < maxIterations) {
+      safetyCounter++;
+      
+      // Check global limits
+      if (this.graph.size >= this.maxPages) break;
+      
+      // Ask strategy for next action
+      const action = await this.strategy.selectNextAction(node, node.unexploredLinks);
+      
+      if (action.action === ExplorationAction.DONE) {
+        break;
+      }
+      
+      if (action.action === ExplorationAction.BACK) {
+        // Navigate back to parent and continue from there
+        if (node.parent) {
+          await this.navigateBackToNode(node.parent);
+        }
+        break;
+      }
+      
+      if (action.action === ExplorationAction.CLICK && action.link) {
+        // Click the selected link and explore
+        const childNode = await this.clickAndCapture(node, action.link);
+        
+        if (childNode) {
+          // Successfully navigated to new page/state
+          this.graph.addNode(childNode);
+          this.graph.addEdge(node.id, childNode.id, { 
+            via: action.link,
+            type: this.isSPA ? 'spa' : 'click'
+          });
+          
+          // Mark link as explored
+          node.markLinkExplored(action.link);
+          this.strategy.markProcessed(action.link.href);
+          
+          // Recursively explore child if not too deep
+          if (childNode.depth < this.maxDepth) {
+            await this.exploreFromNode(childNode);
+          }
+          
+          // Navigate back to current node to continue exploration
+          if (node.hasUnexploredLinks() && this.graph.size < this.maxPages) {
+            await this.navigateBackToNode(node.id);
+          }
+        } else {
+          // Failed to navigate, mark as explored anyway
+          node.markLinkExplored(action.link);
+        }
+      }
+    }
+    
+    // Mark as leaf if no more exploration possible
+    if (!node.hasUnexploredLinks()) {
+      node.isLeaf = true;
+    }
+  }
+
+  /**
+   * Create a NavigationNode from current page state
+   * @param {string} url - Page URL
+   * @param {string|null} parentId - Parent node ID
+   * @param {number} depth - Depth from root
+   * @param {string|null} [stateHash] - SPA state hash
+   * @returns {Promise<NavigationNode>}
+   */
+  async createNavigationNode(url, parentId, depth, stateHash = null) {
+    const title = await this.page.title();
+    const nodeId = createNodeId(url, stateHash);
+    
+    const node = new NavigationNode(nodeId, {
+      url,
+      stateHash,
+      title,
+      parent: parentId,
+      depth,
+      metadata: {
+        isNavigation: false,
+        capturedAt: Date.now()
+      }
+    });
+    
+    return node;
+  }
+
+  /**
+   * Click a link and capture the resulting page/state
+   * @param {NavigationNode} currentNode - Current node
+   * @param {Object} link - Link to click
+   * @returns {Promise<NavigationNode|null>} New node or null if navigation failed
+   */
+  async clickAndCapture(currentNode, link) {
+    const previousUrl = this.page.url();
+    const previousHash = this.isSPA ? await this.spaDetector.getStateHash() : null;
+    
+    try {
+      // Try to click the link
+      if (link.selector) {
+        await this.page.click(link.selector, { timeout: 3000 }).catch(() => null);
+      } else if (link.href) {
+        await this.page.goto(link.href, { 
+          waitUntil: 'networkidle',
+          timeout: this.timeout 
+        });
+      } else {
+        return null;
+      }
+      
+      // Wait for navigation/state change
+      if (this.isSPA) {
+        await waitForSPAReady(this.page, { timeout: 3000 });
+        await this.page.waitForTimeout(500);
+      } else {
+        await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+      }
+      
+      // Check if we actually navigated somewhere new
+      const newUrl = this.page.url();
+      const newHash = this.isSPA ? await this.spaDetector.getStateHash() : null;
+      
+      // For SPAs, check both URL and state hash
+      const isNewState = this.isSPA 
+        ? (newUrl !== previousUrl || newHash !== previousHash)
+        : (newUrl !== previousUrl);
+      
+      if (!isNewState) {
+        // No navigation occurred
+        return null;
+      }
+      
+      // Check if this node already exists
+      const nodeId = createNodeId(newUrl, newHash);
+      if (this.graph.getNode(nodeId)) {
+        // Already visited this state
+        return null;
+      }
+      
+      // Create new node
+      const newNode = await this.createNavigationNode(
+        newUrl, 
+        currentNode.id, 
+        currentNode.depth + 1,
+        newHash
+      );
+      
+      return newNode;
+    } catch (error) {
+      console.warn(`Failed to click "${link.text || link.href}":`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Navigate back to a specific node
+   * @param {string} targetNodeId - Node ID to navigate back to
+   */
+  async navigateBackToNode(targetNodeId) {
+    const targetNode = this.graph.getNode(targetNodeId);
+    if (!targetNode) return;
+    
+    // Try SPA back navigation first
+    if (this.isSPA && this.spaDetector) {
+      const success = await this.spaDetector.navigateBack();
+      if (success) {
+        // Verify we reached the right state
+        const currentHash = await this.spaDetector.getStateHash();
+        const currentUrl = this.page.url();
+        const currentId = createNodeId(currentUrl, currentHash);
+        
+        if (currentId === targetNodeId) {
+          return;
+        }
+      }
+    }
+    
+    // Fallback: direct navigation to URL
+    try {
+      await this.page.goto(targetNode.url, {
+        waitUntil: 'networkidle',
+        timeout: this.timeout
+      });
+      
+      if (this.isSPA) {
+        await waitForSPAReady(this.page, { timeout: 3000 });
+      }
+    } catch (error) {
+      console.warn(`Failed to navigate back to ${targetNode.url}:`, error.message);
+    }
+  }
+
+  /**
+   * Capture page data and add to legacy sitemap
+   * @param {string} url - Page URL
+   * @param {number} depth - Current depth
+   * @returns {Promise<SitePage|null>}
+   */
+  async capturePageData(url, depth) {
+    try {
+      // This reuses existing visitPage logic for data capture
+      const metadata = await this.page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href]'))
+          .map(a => ({
+            href: a.href,
+            text: a.textContent?.trim() || '',
+            ariaLabel: a.getAttribute('aria-label') || ''
+          }))
+          .filter(l => l.href && !l.href.startsWith('javascript:') && !l.href.startsWith('#'));
+
+        const navLinks = Array.from(document.querySelectorAll('nav a, header a, [role="navigation"] a'))
+          .map(a => a.href)
+          .filter(Boolean);
+
+        return {
+          title: document.title,
+          description: document.querySelector('meta[name="description"]')?.content || '',
+          h1: document.querySelector('h1')?.textContent?.trim() || '',
+          links,
+          navLinks,
+          hasForm: !!document.querySelector('form'),
+          hasPricing: document.body.innerText.toLowerCase().includes('pricing'),
+          hasFeatures: document.body.innerText.toLowerCase().includes('features'),
+          hasDocs: document.body.innerText.toLowerCase().includes('documentation') || 
+                   document.body.innerText.toLowerCase().includes('docs')
+        };
+      });
+
+      const screenshot = await this.page.screenshot({ encoding: 'base64' });
+
+      const sitePage = new SitePage(url, {
+        title: metadata.title,
+        description: metadata.description,
+        links: this.filterLinks(metadata.links, metadata.navLinks),
+        priority: depth === 0 ? 100 : 50
+      });
+      sitePage.visited = true;
+      sitePage.screenshot = screenshot;
+      sitePage.metadata = metadata;
+
+      this.pages.set(url, sitePage);
+      return sitePage;
+    } catch (error) {
+      console.warn(`Failed to capture page data for ${url}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Visit a page and extract information
+   * @param {string} url - URL to visit
+   * @param {number} depth - Current depth in crawl
+   * @param {Object} [options] - Visit options
+   * @param {boolean} [options.analyzeContent=false] - Perform deep content analysis
+   */
+  async visitPage(url, depth, options = {}) {
+    const { analyzeContent = false } = options;
+    
     if (this.pages.has(url) || depth > this.maxDepth) return;
 
     try {
@@ -161,6 +551,28 @@ export class SiteExplorer {
       sitePage.screenshot = screenshot;
       sitePage.metadata = metadata;
 
+      // Perform deep content analysis if requested
+      if (analyzeContent) {
+        try {
+          const contentAnalysis = await this.analyzePageContent();
+          sitePage.contentAnalysis = contentAnalysis;
+          
+          // Filter to unique content using deduplicator
+          const uniqueSections = await this.deduplicator.getUniqueContent(
+            contentAnalysis.sections,
+            this.page
+          );
+          
+          // Update priority based on content score
+          const avgScore = uniqueSections.length > 0
+            ? uniqueSections.reduce((sum, s) => sum + s.demoScore, 0) / uniqueSections.length
+            : 50;
+          sitePage.priority = Math.max(sitePage.priority, avgScore);
+        } catch (e) {
+          console.warn(`Content analysis failed for ${url}:`, e.message);
+        }
+      }
+
       this.pages.set(url, sitePage);
 
       return sitePage;
@@ -168,6 +580,35 @@ export class SiteExplorer {
       console.warn(`Failed to visit ${url}:`, error.message);
       return null;
     }
+  }
+
+  /**
+   * Analyze content of the current page
+   * @returns {Promise<import('./content-analyzer.js').PageContent>}
+   */
+  async analyzePageContent() {
+    if (!this.contentAnalyzer) {
+      this.contentAnalyzer = new ContentAnalyzer(this.page);
+    }
+    return this.contentAnalyzer.analyzeStructure();
+  }
+
+  /**
+   * Get ranked sections across all visited pages
+   * @returns {Array<{url: string, section: import('./content-analyzer.js').ContentSection}>}
+   */
+  getRankedContentSections() {
+    const allSections = [];
+    
+    for (const [url, sitePage] of this.pages) {
+      if (sitePage.contentAnalysis) {
+        for (const section of sitePage.contentAnalysis.getRankedSections()) {
+          allSections.push({ url, section });
+        }
+      }
+    }
+    
+    return allSections.sort((a, b) => b.section.demoScore - a.section.demoScore);
   }
 
   /**
@@ -302,13 +743,42 @@ Which pages should we visit for an engaging product demo?`
 
   /**
    * Get the explored sitemap
+   * @returns {Object} Site map with pages and graph
    */
   getSiteMap() {
     return {
       baseUrl: this.baseUrl,
       pages: Array.from(this.pages.values()),
-      totalDiscovered: this.pages.size
+      totalDiscovered: this.pages.size,
+      graph: this.graph,
+      graphSummary: this.graph.getSummary(),
+      isSPA: this.isSPA
     };
+  }
+
+  /**
+   * Get the navigation graph
+   * @returns {NavigationGraph}
+   */
+  getGraph() {
+    return this.graph;
+  }
+
+  /**
+   * Export the navigation graph as a Mermaid diagram
+   * @param {Object} [options] - Mermaid options
+   * @returns {string} Mermaid diagram code
+   */
+  getGraphDiagram(options = {}) {
+    return this.graph.toMermaid(options);
+  }
+
+  /**
+   * Get exploration statistics
+   * @returns {Object|null}
+   */
+  getExplorationStats() {
+    return this.strategy?.getStats() || null;
   }
 }
 
@@ -570,5 +1040,30 @@ export async function smartNavigate(page, element, options = {}) {
     };
   }
 }
+
+// Re-export navigation graph components for external use
+export { 
+  NavigationGraph, 
+  NavigationNode, 
+  NavigationEdge, 
+  createNodeId 
+} from './navigation-graph.js';
+
+// Re-export SPA detector components
+export { 
+  SPADetector, 
+  generateStateHash, 
+  detectSPAFramework, 
+  waitForSPAReady 
+} from './spa-detector.js';
+
+// Re-export exploration strategy components
+export { 
+  ExplorationStrategy, 
+  ExplorationStrategyType, 
+  ExplorationAction, 
+  createDemoStrategy,
+  aiSelectNextAction 
+} from './exploration-strategy.js';
 
 export default SiteExplorer;

@@ -6,12 +6,12 @@
  */
 
 // Re-export all types
-export * from './project.js';
-export * from './options.js';
-export * from './ai.js';
+export * from './project';
+export * from './options';
+export * from './ai';
 
 // Convenience type for importing all
-import type { Project, ProjectMetadata, ProjectSettings, Timeline } from './project.js';
+import type { ProjectJSON, ProjectMetadata, ProjectSettings, Timeline } from './project';
 import type { 
   DemoOptions, 
   ZoomOptions, 
@@ -20,7 +20,7 @@ import type {
   RecordingOptions,
   ExportOptions,
   MobileDemoOptions
-} from './options.js';
+} from './options';
 import type { 
   AIProviders, 
   WebsiteAnalysis, 
@@ -28,11 +28,11 @@ import type {
   SuggestedAction,
   ScriptOptions,
   VoiceoverOptions
-} from './ai.js';
+} from './ai';
 
 export {
   // Project types
-  Project,
+  ProjectJSON,
   ProjectMetadata,
   ProjectSettings,
   Timeline,

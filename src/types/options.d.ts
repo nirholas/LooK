@@ -241,9 +241,9 @@ export interface DemoResult {
   /** Generated script */
   script: string | null;
   /** Website analysis */
-  analysis: import('./ai.js').WebsiteAnalysis | null;
+  analysis: import('./ai').WebsiteAnalysis | null;
   /** Cursor tracking data */
-  cursorData: import('./project.js').CursorData | null;
+  cursorData: import('./project').CursorData | null;
   /** Zoom keyframes */
-  zoomKeyframes: import('./project.js').ZoomKeyframe[] | null;
+  zoomKeyframes: import('./project').ZoomKeyframe[] | null;
 }

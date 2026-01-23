@@ -8,11 +8,15 @@ import { toast } from './toast.js';
 import { KeyboardShortcuts } from './keyboard.js';
 import { Timeline } from './timeline.js';
 import { AutoSave } from './autosave.js';
+import { LivePreview } from './live-preview.js';
 
 class LookEditor {
   constructor() {
     this.currentProject = null;
     this.previewRenderer = null;
+    this.livePreview = null;
+    this.liveSessionId = null;
+    this.isLiveRecording = false;
     this.ws = null;
     this.keyboard = null;
     this.timeline = null;
@@ -26,11 +30,16 @@ class LookEditor {
       urlInput: document.getElementById('url-input'),
       projectsList: document.getElementById('projects-list'),
       dropZone: document.getElementById('drop-zone'),
+      liveRecordBtn: document.getElementById('live-record-btn'),
       
       // Editor screen
       editorScreen: document.getElementById('editor-screen'),
       exportBtn: document.getElementById('export-btn'),
       backBtn: document.getElementById('back-btn'),
+      
+      // Live preview
+      livePreviewPanel: document.getElementById('live-preview-panel'),
+      livePreviewContainer: document.getElementById('live-preview-container'),
       
       // Video
       videoContainer: document.getElementById('video-container'),
@@ -168,8 +177,27 @@ class LookEditor {
       this.analyzeUrl(this.elements.urlInput.value);
     });
     
+    // Live record button
+    this.elements.liveRecordBtn?.addEventListener('click', () => {
+      const url = this.elements.urlInput.value;
+      if (url) {
+        this.startLiveRecording(url);
+      } else {
+        toast.error('Please enter a URL first');
+      }
+    });
+    
     // Back button
-    this.elements.backBtn?.addEventListener('click', () => this.showStartScreen());
+    this.elements.backBtn?.addEventListener('click', () => {
+      if (this.isLiveRecording) {
+        if (confirm('Stop live recording and go back?')) {
+          this.stopLiveRecording();
+          this.showStartScreen();
+        }
+      } else {
+        this.showStartScreen();
+      }
+    });
     
     // Video controls
     this.elements.playBtn?.addEventListener('click', () => this.togglePlayback());
@@ -1184,6 +1212,180 @@ class LookEditor {
   
   setProgress(percent) {
     this.elements.progressBar.style.width = `${percent}%`;
+  }
+  
+  // ============================================================
+  // Live Recording Methods
+  // ============================================================
+  
+  /**
+   * Start a live recording session with real-time preview
+   * @param {string} url - URL to record
+   */
+  async startLiveRecording(url) {
+    try {
+      this.setStatus('Starting live recording...');
+      this.showProgress();
+      
+      // Call API to start live recording
+      const response = await API.startLiveRecording(url, {
+        width: 1920,
+        height: 1080,
+        fps: 30,
+        previewFps: 15
+      });
+      
+      this.liveSessionId = response.sessionId;
+      this.isLiveRecording = true;
+      
+      // Show editor screen with live preview
+      this.showEditorScreen();
+      this.showLivePreviewPanel();
+      
+      // Initialize LivePreview component
+      this.initLivePreview(response.sessionId);
+      
+      this.setStatus('🔴 Live recording in progress');
+      this.hideProgress();
+      toast.success('Live recording started');
+      
+    } catch (error) {
+      console.error('Failed to start live recording:', error);
+      this.hideProgress();
+      toast.error(`Failed to start live recording: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Initialize the LivePreview component
+   * @param {string} sessionId - Live recording session ID
+   */
+  initLivePreview(sessionId) {
+    // Create LivePreview instance
+    this.livePreview = new LivePreview({
+      container: this.elements.livePreviewContainer,
+      ws: this.ws,
+      onStateChange: ({ state, elapsed, projectId, duration }) => {
+        this.handleLiveStateChange(state, elapsed, projectId, duration);
+      },
+      onClick: ({ x, y }) => {
+        console.log(`Manual click at ${x}, ${y}`);
+      }
+    });
+    
+    // Subscribe to the live session
+    this.livePreview.subscribe(sessionId);
+  }
+  
+  /**
+   * Handle live recording state changes
+   */
+  handleLiveStateChange(state, elapsed, projectId, duration) {
+    switch (state) {
+      case 'recording':
+        this.setStatus(`🔴 Recording - ${this.formatTime(elapsed)}`);
+        // Dim the sidebar when recording
+        this.setLiveEditMode(false);
+        break;
+        
+      case 'paused':
+        this.setStatus(`⏸️ Paused - ${this.formatTime(elapsed)}`);
+        toast.info('Recording paused - you can now take manual control or edit the timeline');
+        // Enable editing when paused
+        this.setLiveEditMode(true);
+        break;
+        
+      case 'complete':
+        this.isLiveRecording = false;
+        this.liveSessionId = null;
+        this.hideLivePreviewPanel();
+        this.setStatus('Recording complete');
+        toast.success(`Recording complete! Duration: ${this.formatTime(duration)}`);
+        
+        // Load the completed project for final editing
+        if (projectId) {
+          this.loadProject(projectId);
+        }
+        break;
+    }
+  }
+  
+  /**
+   * Enable/disable editing during live recording
+   * @param {boolean} enabled - Whether to enable editing
+   */
+  setLiveEditMode(enabled) {
+    const editorLayout = this.elements.editorScreen?.querySelector('.editor-layout');
+    if (!editorLayout) return;
+    
+    if (enabled) {
+      // Show sidebar for editing while paused
+      editorLayout.classList.remove('live-mode');
+      editorLayout.classList.add('live-paused-mode');
+    } else {
+      // Hide sidebar during recording
+      editorLayout.classList.add('live-mode');
+      editorLayout.classList.remove('live-paused-mode');
+    }
+  }
+  
+  /**
+   * Format milliseconds as mm:ss
+   */
+  formatTime(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+  
+  /**
+   * Stop the live recording
+   */
+  async stopLiveRecording() {
+    if (!this.liveSessionId) return;
+    
+    try {
+      if (this.livePreview) {
+        this.livePreview.stop();
+        this.livePreview.destroy();
+        this.livePreview = null;
+      }
+      
+      this.isLiveRecording = false;
+      this.liveSessionId = null;
+      this.hideLivePreviewPanel();
+      
+    } catch (error) {
+      console.error('Failed to stop live recording:', error);
+    }
+  }
+  
+  /**
+   * Show the live preview panel
+   */
+  showLivePreviewPanel() {
+    this.elements.livePreviewPanel?.classList.remove('hidden');
+    // Get the editor layout and add live mode class
+    const editorLayout = this.elements.editorScreen?.querySelector('.editor-layout');
+    editorLayout?.classList.add('live-mode');
+  }
+  
+  /**
+   * Hide the live preview panel
+   */
+  hideLivePreviewPanel() {
+    this.elements.livePreviewPanel?.classList.add('hidden');
+    const editorLayout = this.elements.editorScreen?.querySelector('.editor-layout');
+    editorLayout?.classList.remove('live-mode');
+  }
+  
+  /**
+   * Show editor screen
+   */
+  showEditorScreen() {
+    this.elements.startScreen.classList.add('hidden');
+    this.elements.editorScreen.classList.remove('hidden');
   }
 }
 
