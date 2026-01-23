@@ -928,11 +928,13 @@ export async function startServer(options = {}) {
 
   return new Promise((resolve) => {
     // Bind to 0.0.0.0 to allow external connections (required for Docker/Railway)
-    server.listen(port, '0.0.0.0', () => {
-      const url = `http://localhost:${port}`;
-      console.log(chalk.green(`\n✨ L👀K Editor running at ${chalk.bold(url)}\n`));
+    server.listen(actualPort, host, () => {
+      const url = `http://localhost:${actualPort}`;
+      console.log(chalk.green(`\n✨ L👀K Editor running at ${chalk.bold(url)}`));
+      console.log(chalk.dim(`   Listening on ${host}:${actualPort}\n`));
       
-      if (openBrowser) {
+      // Don't try to open browser in production/container environments
+      if (openBrowser && !process.env.PORT) {
         import('child_process').then(({ exec }) => {
           const cmd = process.platform === 'darwin' ? 'open' :
                       process.platform === 'win32' ? 'start' : 'xdg-open';
