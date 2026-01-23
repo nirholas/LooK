@@ -108,6 +108,77 @@ export const API = {
    */
   getCursorData(projectId) {
     return request('GET', `/api/preview/${projectId}/cursor`);
+  },
+  
+  // ============================================================
+  // Live Recording API
+  // ============================================================
+  
+  /**
+   * Start a live recording session with real-time preview
+   * @param {string} projectIdOrUrl - Project ID or URL to record
+   * @param {Object} options - Recording options
+   * @returns {Promise<{sessionId: string, projectId: string}>}
+   */
+  startLiveRecording(projectIdOrUrl, options = {}) {
+    const body = options.url ? { url: projectIdOrUrl, options } : { projectId: projectIdOrUrl, options };
+    return request('POST', '/api/live/start', body);
+  },
+  
+  /**
+   * Pause live recording
+   * @param {string} sessionId - Session ID
+   */
+  pauseLiveRecording(sessionId) {
+    return request('POST', `/api/live/${sessionId}/pause`);
+  },
+  
+  /**
+   * Resume live recording
+   * @param {string} sessionId - Session ID
+   */
+  resumeLiveRecording(sessionId) {
+    return request('POST', `/api/live/${sessionId}/resume`);
+  },
+  
+  /**
+   * Stop live recording
+   * @param {string} sessionId - Session ID
+   */
+  stopLiveRecording(sessionId) {
+    return request('POST', `/api/live/${sessionId}/stop`);
+  },
+  
+  /**
+   * Enable manual control mode
+   * @param {string} sessionId - Session ID
+   */
+  enableManualMode(sessionId) {
+    return request('POST', `/api/live/${sessionId}/manual`);
+  },
+  
+  /**
+   * Perform action during live recording
+   * @param {string} sessionId - Session ID
+   * @param {Object} action - Action to perform (type, x, y, etc.)
+   */
+  liveAction(sessionId, action) {
+    return request('POST', `/api/live/${sessionId}/action`, action);
+  },
+  
+  /**
+   * Get live session status
+   * @param {string} sessionId - Session ID
+   */
+  getLiveStatus(sessionId) {
+    return request('GET', `/api/live/${sessionId}/status`);
+  },
+  
+  /**
+   * List all active live sessions
+   */
+  listLiveSessions() {
+    return request('GET', '/api/live/sessions');
   }
 };
 

@@ -1,0 +1,83 @@
+name: Scheduled Demo Generation
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-weekly-demos:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        site:
+          - name: homepage
+            url: https://myapp.com
+            duration: 30
+          - name: features
+            url: https://myapp.com/features
+            duration: 45
+          - name: pricing
+            url: https://myapp.com/pricing
+            duration: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Generate demo
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npx look-demo demo "${{ matrix.site.url }}" \
+            -o ./demos/${{ matrix.site.name }}-demo.mp4 \
+            -d ${{ matrix.site.duration }} \
+            -v nova \
+            -s professional \
+            --reliable
+
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        with:
+          args: --acl public-read
+          source_dir: ./demos/
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.24.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "text": "🎬 Weekly demo videos generated!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ matrix.site.name }}* demo is ready!\nURL: ${{ matrix.site.url }}"
+                  }
+                }
+              ]
+            }

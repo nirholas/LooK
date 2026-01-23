@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "iOS App Demo",
+  "description": "Scripted actions for iOS app demo recording",
+  "platform": "ios",
+  "device": "iPhone 15 Pro",
+  "orientation": "portrait",
+  "output": {
+    "path": "./output/ios-demo.mp4",
+    "preset": "youtube",
+    "addDeviceFrame": true,
+    "frameStyle": "modern"
+  },
+  "timing": {
+    "duration": 30,
+    "actionDelay": 500
+  },
+  "voice": {
+    "voice": "nova",
+    "style": "professional"
+  },
+  "touchEffects": {
+    "indicator": "circle",
+    "color": "rgba(255, 255, 255, 0.8)",
+    "size": 80,
+    "showSwipeTrail": true
+  },
+  "actions": [
+    {
+      "type": "launch",
+      "comment": "App launches"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Wait for app to load"
+    },
+    {
+      "type": "tap",
+      "selector": "label == 'Get Started'",
+      "comment": "Tap Get Started using predicate"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "swipe",
+      "direction": "left",
+      "comment": "Swipe through onboarding"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "swipe",
+      "direction": "left",
+      "comment": "Continue onboarding"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "tap",
+      "selector": "name == 'Continue'",
+      "comment": "Tap Continue"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "tap",
+      "accessibilityId": "emailTextField",
+      "comment": "Focus email field"
+    },
+    {
+      "type": "type",
+      "text": "demo@example.com",
+      "comment": "Enter email"
+    },
+    {
+      "type": "tap",
+      "accessibilityId": "passwordTextField",
+      "comment": "Focus password field"
+    },
+    {
+      "type": "type",
+      "text": "password123",
+      "comment": "Enter password"
+    },
+    {
+      "type": "tap",
+      "selector": "name == 'Sign In'",
+      "comment": "Tap Sign In"
+    },
+    {
+      "type": "wait",
+      "duration": 2500,
+      "comment": "Wait for login"
+    },
+    {
+      "type": "scroll",
+      "direction": "down",
+      "comment": "Scroll through content"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "tap",
+      "x": 200,
+      "y": 400,
+      "comment": "Tap on content item"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "View details"
+    },
+    {
+      "type": "tap",
+      "accessibilityId": "favoriteButton",
+      "comment": "Tap favorite"
+    },
+    {
+      "type": "wait",
+      "duration": 1000
+    },
+    {
+      "type": "tap",
+      "accessibilityId": "shareButton",
+      "comment": "Tap share"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show share sheet"
+    }
+  ],
+  "metadata": {
+    "bundleId": "com.example.myapp",
+    "automationName": "XCUITest"
+  }
+}

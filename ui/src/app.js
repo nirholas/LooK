@@ -75,6 +75,13 @@ class LookEditor {
       tabBtns: document.querySelectorAll('.tab-btn'),
       scriptTab: document.getElementById('script-tab'),
       settingsTab: document.getElementById('settings-tab'),
+      markersTab: document.getElementById('markers-tab'),
+      
+      // Markers panel
+      markersList: document.getElementById('markers-list'),
+      addMarkerBtn: document.getElementById('add-marker-btn'),
+      generateMarkersBtn: document.getElementById('generate-markers-btn'),
+      clearMarkersBtn: document.getElementById('clear-markers-btn'),
       
       // Status
       statusMessage: document.getElementById('status-message'),
@@ -227,49 +234,11 @@ class LookEditor {
       this.isFullscreen = !!document.fullscreenElement;
       this.elements.videoContainer?.classList.toggle('is-fullscreen', this.isFullscreen);
     });
-  }
-    this.elements.timelineTrack.addEventListener('click', (e) => {
-      const rect = e.target.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      this.seekToPercent(percent);
-    });
     
-    // Script editing
-    this.elements.regenerateVoiceBtn.addEventListener('click', () => this.regenerateVoice());
-    
-    // Settings changes
-    const settingsInputs = [
-      'zoomMode', 'zoomIntensity', 'zoomSpeed',
-      'cursorStyle', 'cursorSize', 'cursorColor',
-      'clickEffect', 'clickColor', 'exportPreset'
-    ];
-    
-    settingsInputs.forEach(id => {
-      const el = this.elements[id];
-      if (el) {
-        el.addEventListener('change', () => {
-          this.onSettingsChange();
-          this.autoSave?.markDirty();
-        });
-      }
-    });
-    
-    // Tabs - handled in switchTab method now
-    this.elements.tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
-    });
-    
-    // Export
-    this.elements.exportBtn?.addEventListener('click', () => this.showExportModal());
-    this.elements.cancelExport?.addEventListener('click', () => this.hideExportModal());
-    this.elements.startExport?.addEventListener('click', () => this.startExport());
-    
-    // Close modal on backdrop click
-    this.elements.exportModal?.addEventListener('click', (e) => {
-      if (e.target === this.elements.exportModal) {
-        this.hideExportModal();
-      }
-    });
+    // Add marker button
+    this.elements.addMarkerBtn?.addEventListener('click', () => this.addMarkerAtCurrentTime());
+    this.elements.generateMarkersBtn?.addEventListener('click', () => this.generateMarkersFromClicks());
+    this.elements.clearMarkersBtn?.addEventListener('click', () => this.clearAllMarkers());
   }
   
   // Tab switching
@@ -280,6 +249,7 @@ class LookEditor {
     
     this.elements.scriptTab?.classList.toggle('hidden', tabName !== 'script');
     this.elements.settingsTab?.classList.toggle('hidden', tabName !== 'settings');
+    this.elements.markersTab?.classList.toggle('hidden', tabName !== 'markers');
   }
   
   // New project
@@ -301,7 +271,10 @@ class LookEditor {
     try {
       await API.updateProject(this.currentProject.id, {
         settings: this.getSettings(),
-        script: this.elements.scriptEditor?.value
+        script: this.elements.scriptEditor?.value,
+        timeline: {
+          markers: this.currentProject.markers || []
+        }
       });
       
       this.autoSave?.markClean();
@@ -522,6 +495,11 @@ class LookEditor {
     return div.innerHTML;
   }
   
+  capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+  
   formatDate(dateStr) {
     const date = new Date(dateStr);
     const now = new Date();
@@ -582,6 +560,10 @@ class LookEditor {
       
       // Load settings
       this.loadSettings(project.settings);
+      
+      // Load markers
+      this.currentProject.markers = project.timeline?.markers || [];
+      this.renderMarkersPanel();
       
       // Setup preview renderer
       const cursorData = await API.getCursorData(projectId);
@@ -724,6 +706,348 @@ class LookEditor {
     } finally {
       this.elements.regenerateVoiceBtn.disabled = false;
     }
+  }
+  
+  // ===== Markers Management =====
+  
+  addMarkerAtCurrentTime() {
+    const video = this.elements.previewVideo;
+    if (!video || !video.duration) return;
+    
+    const time = video.currentTime;
+    this.promptAddMarker(time);
+  }
+  
+  promptAddMarker(time) {
+    const label = prompt('Enter marker label:', `Section ${(this.currentProject.markers?.length || 0) + 1}`);
+    if (label === null) return; // User cancelled
+    
+    this.addMarker(time, label || 'Marker');
+  }
+  
+  addMarker(time, label) {
+    if (!this.currentProject) return;
+    
+    if (!this.currentProject.markers) {
+      this.currentProject.markers = [];
+    }
+    
+    this.currentProject.markers.push({ time, label });
+    this.currentProject.markers.sort((a, b) => a.time - b.time);
+    
+    this.renderMarkersPanel();
+    this.updateTimelineMarkers();
+    this.autoSave?.markDirty();
+    
+    toast.success(`Marker "${label}" added`);
+  }
+  
+  editMarker(index) {
+    const marker = this.currentProject?.markers?.[index];
+    if (!marker) return;
+    
+    const label = prompt('Edit marker label:', marker.label);
+    if (label === null) return; // User cancelled
+    
+    const timeStr = prompt('Edit marker time (seconds):', marker.time.toFixed(2));
+    if (timeStr === null) return;
+    
+    const newTime = parseFloat(timeStr);
+    if (isNaN(newTime) || newTime < 0) {
+      toast.error('Invalid time value');
+      return;
+    }
+    
+    this.currentProject.markers[index] = {
+      time: newTime,
+      label: label || 'Marker'
+    };
+    this.currentProject.markers.sort((a, b) => a.time - b.time);
+    
+    this.renderMarkersPanel();
+    this.updateTimelineMarkers();
+    this.autoSave?.markDirty();
+    
+    toast.success('Marker updated');
+  }
+  
+  deleteMarker(index) {
+    if (!this.currentProject?.markers?.[index]) return;
+    
+    const marker = this.currentProject.markers[index];
+    if (!confirm(`Delete marker "${marker.label}"?`)) return;
+    
+    this.currentProject.markers.splice(index, 1);
+    
+    this.renderMarkersPanel();
+    this.updateTimelineMarkers();
+    this.autoSave?.markDirty();
+    
+    toast.success('Marker deleted');
+  }
+  
+  jumpToMarker(index) {
+    const marker = this.currentProject?.markers?.[index];
+    if (!marker) return;
+    
+    const video = this.elements.previewVideo;
+    if (video && video.duration) {
+      video.currentTime = marker.time;
+      this.updateTimeDisplay();
+    }
+  }
+  
+  jumpToPreviousMarker() {
+    const markers = this.currentProject?.markers || [];
+    if (markers.length === 0) return;
+    
+    const video = this.elements.previewVideo;
+    if (!video) return;
+    
+    const currentTime = video.currentTime;
+    
+    // Find the last marker before current time (with 0.5s buffer)
+    for (let i = markers.length - 1; i >= 0; i--) {
+      if (markers[i].time < currentTime - 0.5) {
+        this.jumpToMarker(i);
+        toast.info(`⏮️ ${markers[i].label}`);
+        return;
+      }
+    }
+    
+    // If no previous marker, jump to last one
+    this.jumpToMarker(markers.length - 1);
+    toast.info(`⏮️ ${markers[markers.length - 1].label}`);
+  }
+  
+  jumpToNextMarker() {
+    const markers = this.currentProject?.markers || [];
+    if (markers.length === 0) return;
+    
+    const video = this.elements.previewVideo;
+    if (!video) return;
+    
+    const currentTime = video.currentTime;
+    
+    // Find the first marker after current time
+    for (let i = 0; i < markers.length; i++) {
+      if (markers[i].time > currentTime + 0.1) {
+        this.jumpToMarker(i);
+        toast.info(`⏭️ ${markers[i].label}`);
+        return;
+      }
+    }
+    
+    // If no next marker, jump to first one
+    this.jumpToMarker(0);
+    toast.info(`⏭️ ${markers[0].label}`);
+  }
+  
+  generateMarkersFromClicks() {
+    if (!this.previewRenderer?.cursorData?.clicks?.length) {
+      toast.warning('No click data available');
+      return;
+    }
+    
+    const clicks = this.previewRenderer.cursorData.clicks;
+    const video = this.elements.previewVideo;
+    const duration = video?.duration || 0;
+    
+    if (!duration) {
+      toast.warning('Video not loaded');
+      return;
+    }
+    
+    // Group clicks that are close together (within 2 seconds)
+    // Keep track of element context for each group
+    const groupedClicks = [];
+    let currentGroup = null;
+    
+    for (const click of clicks) {
+      const timeSeconds = click.t / 1000;
+      
+      if (!currentGroup || timeSeconds - currentGroup.endTime > 2) {
+        // Start a new group
+        currentGroup = {
+          startTime: timeSeconds,
+          endTime: timeSeconds,
+          count: 1,
+          clicks: [click]
+        };
+        groupedClicks.push(currentGroup);
+      } else {
+        // Add to current group
+        currentGroup.endTime = timeSeconds;
+        currentGroup.count++;
+        currentGroup.clicks.push(click);
+      }
+    }
+    
+    // Generate smart labels based on element context
+    const generateSmartLabel = (group, index) => {
+      // Look for the most meaningful click in the group
+      for (const click of group.clicks) {
+        const el = click.element;
+        if (!el) continue;
+        
+        // Priority 1: Use aria-label or text content
+        if (el.ariaLabel) {
+          return this.capitalizeFirst(el.ariaLabel.substring(0, 30));
+        }
+        
+        if (el.text && el.text.length > 2) {
+          // Clean up the text
+          let label = el.text.substring(0, 30);
+          // Combine section + action for context
+          if (el.section && el.section !== 'content') {
+            const sectionName = this.capitalizeFirst(el.section);
+            if (el.type === 'button' || el.type === 'cta') {
+              return `${sectionName}: ${label}`;
+            }
+            return `${sectionName} - ${label}`;
+          }
+          return label;
+        }
+        
+        // Priority 2: Use section + element type
+        if (el.section && el.section !== 'content') {
+          const sectionName = this.capitalizeFirst(el.section);
+          const typeName = this.capitalizeFirst(el.type || 'click');
+          return `${sectionName} ${typeName}`;
+        }
+        
+        // Priority 3: Just element type
+        if (el.type) {
+          return `Click ${this.capitalizeFirst(el.type)}`;
+        }
+      }
+      
+      // Fallback
+      return `Action ${index + 1}`;
+    };
+    
+    // Create markers for each group with smart labels
+    const newMarkers = groupedClicks.map((group, index) => ({
+      time: group.startTime,
+      label: generateSmartLabel(group, index)
+    }));
+    
+    if (newMarkers.length === 0) {
+      toast.info('No markers generated');
+      return;
+    }
+    
+    // Ask user if they want to replace or append
+    const existingCount = this.currentProject?.markers?.length || 0;
+    if (existingCount > 0) {
+      const action = confirm(`Found ${newMarkers.length} click groups. Replace existing ${existingCount} markers?\n\nOK = Replace, Cancel = Append`);
+      if (action) {
+        this.currentProject.markers = newMarkers;
+      } else {
+        this.currentProject.markers = [...(this.currentProject.markers || []), ...newMarkers];
+        this.currentProject.markers.sort((a, b) => a.time - b.time);
+      }
+    } else {
+      this.currentProject.markers = newMarkers;
+    }
+    
+    this.renderMarkersPanel();
+    this.updateTimelineMarkers();
+    this.autoSave?.markDirty();
+    
+    toast.success(`Generated ${newMarkers.length} markers from clicks`);
+  }
+  
+  clearAllMarkers() {
+    const count = this.currentProject?.markers?.length || 0;
+    if (count === 0) {
+      toast.info('No markers to clear');
+      return;
+    }
+    
+    if (!confirm(`Delete all ${count} markers?`)) return;
+    
+    this.currentProject.markers = [];
+    
+    this.renderMarkersPanel();
+    this.updateTimelineMarkers();
+    this.autoSave?.markDirty();
+    
+    toast.success('All markers cleared');
+  }
+  
+  renderMarkersPanel() {
+    if (!this.elements.markersList) return;
+    
+    const markers = this.currentProject?.markers || [];
+    
+    if (markers.length === 0) {
+      this.elements.markersList.innerHTML = `
+        <div class="markers-empty">
+          No markers yet. Double-click on the timeline or press <kbd>M</kbd> to add a marker.
+        </div>
+      `;
+      return;
+    }
+    
+    this.elements.markersList.innerHTML = markers.map((marker, index) => `
+      <div class="marker-item" data-index="${index}">
+        <div class="marker-item-info" title="Click to jump">
+          <span class="marker-item-time">${this.formatTime(marker.time)}</span>
+          <span class="marker-item-label">${this.escapeHtml(marker.label)}</span>
+        </div>
+        <div class="marker-item-actions">
+          <button class="marker-edit-btn" data-index="${index}" title="Edit">✏️</button>
+          <button class="marker-delete-btn" data-index="${index}" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    
+    // Add event listeners
+    this.elements.markersList.querySelectorAll('.marker-item-info').forEach(el => {
+      el.addEventListener('click', () => {
+        const index = parseInt(el.closest('.marker-item').dataset.index);
+        this.jumpToMarker(index);
+      });
+    });
+    
+    this.elements.markersList.querySelectorAll('.marker-edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.editMarker(parseInt(btn.dataset.index));
+      });
+    });
+    
+    this.elements.markersList.querySelectorAll('.marker-delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.deleteMarker(parseInt(btn.dataset.index));
+      });
+    });
+  }
+  
+  updateTimelineMarkers() {
+    if (this.enhancedTimeline) {
+      this.enhancedTimeline.setMarkers(this.currentProject?.markers || []);
+    }
+  }
+  
+  setupEnhancedTimeline() {
+    const container = this.elements.timelineContainer;
+    if (!container) return;
+    
+    this.enhancedTimeline = new Timeline(container, {
+      onSeek: (percent) => this.seekToPercent(percent),
+      onTrimChange: (start, end) => this.onTrimChange(start, end),
+      onMarkerAdd: (time) => this.promptAddMarker(time),
+      onMarkerEdit: (index, marker) => this.editMarker(index),
+      onMarkerDelete: (index) => this.deleteMarker(index)
+    });
+  }
+  
+  onTrimChange(start, end) {
+    // Handle trim region changes if needed
+    console.log('Trim changed:', start, end);
   }
   
   // Video playback controls

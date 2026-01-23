@@ -1082,6 +1082,289 @@ body {
   animation: pulse 1.5s infinite;
 }
 
+/* ===== Timeline Markers ===== */
+
+/* Marker vertical line on timeline */
+.section-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.timeline-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--warning);
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.timeline-marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background: var(--warning);
+  border-radius: 50%;
+  transform: translateY(-2px);
+}
+
+.timeline-marker:hover {
+  background: #fbbf24;
+}
+
+.timeline-marker:hover::before {
+  background: #fbbf24;
+}
+
+/* Marker label popup on hover */
+.marker-label {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 100;
+}
+
+.marker-label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.timeline-marker:hover .marker-label {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Marker context menu */
+.marker-context-menu {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 0;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 120px;
+}
+
+.marker-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.marker-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.marker-menu-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+}
+
+/* Markers panel in sidebar */
+.markers-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.markers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.markers-header h4 {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.markers-help {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+}
+
+.markers-help p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.markers-help kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.markers-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.markers-actions .btn {
+  flex: 1;
+}
+
+.btn-danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.markers-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.markers-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}
+
+.markers-empty kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.marker-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+
+.marker-item:hover {
+  border-color: var(--warning);
+}
+
+.marker-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.marker-item-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.marker-item-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.marker-item:hover .marker-item-actions {
+  opacity: 1;
+}
+
+.marker-edit-btn,
+.marker-delete-btn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.marker-edit-btn:hover,
+.marker-delete-btn:hover {
+  opacity: 1;
+}
+
+.marker-delete-btn:hover {
+  color: var(--error);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .editor-layout {

@@ -18,12 +18,16 @@ export class Timeline {
     this.trimStart = 0;
     this.trimEnd = 1;
     this.clicks = [];
+    this.markers = [];
     this.waveformData = null;
     this.isDragging = false;
     this.dragType = null;
 
     this.onSeek = options.onSeek || (() => {});
     this.onTrimChange = options.onTrimChange || (() => {});
+    this.onMarkerAdd = options.onMarkerAdd || (() => {});
+    this.onMarkerEdit = options.onMarkerEdit || (() => {});
+    this.onMarkerDelete = options.onMarkerDelete || (() => {});
 
     this.init();
   }
@@ -42,6 +46,7 @@ export class Timeline {
             <div class="playhead-head"></div>
           </div>
           <div class="click-markers"></div>
+          <div class="section-markers"></div>
         </div>
         <div class="timeline-time-labels">
           <span class="time-label time-label-start">0:00</span>
@@ -56,6 +61,7 @@ export class Timeline {
     this.playhead = this.container.querySelector('.playhead');
     this.trimRegion = this.container.querySelector('.trim-region');
     this.clickMarkersContainer = this.container.querySelector('.click-markers');
+    this.sectionMarkersContainer = this.container.querySelector('.section-markers');
     this.startLabel = this.container.querySelector('.time-label-start');
     this.endLabel = this.container.querySelector('.time-label-end');
 
@@ -72,6 +78,24 @@ export class Timeline {
       const rect = this.overlay.getBoundingClientRect();
       const percent = (e.clientX - rect.left) / rect.width;
       this.onSeek(Math.max(0, Math.min(1, percent)));
+    });
+
+    // Double-click to add marker
+    this.overlay.addEventListener('dblclick', (e) => {
+      const rect = this.overlay.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      const time = percent * this.duration;
+      this.onMarkerAdd(time);
+    });
+
+    // Right-click context menu for markers
+    this.sectionMarkersContainer.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const markerEl = e.target.closest('.timeline-marker');
+      if (markerEl) {
+        const markerId = markerEl.dataset.markerId;
+        this.showMarkerContextMenu(e, markerId);
+      }
     });
 
     // Trim handles
@@ -181,6 +205,94 @@ export class Timeline {
       marker.title = `Click ${index + 1} at ${this.formatTime(click.t / 1000)}`;
       this.clickMarkersContainer.appendChild(marker);
     });
+  }
+
+  setMarkers(markers) {
+    this.markers = markers || [];
+    this.renderSectionMarkers();
+  }
+
+  renderSectionMarkers() {
+    this.sectionMarkersContainer.innerHTML = '';
+    
+    if (!this.duration || !this.markers.length) return;
+
+    this.markers.forEach((marker, index) => {
+      const percent = marker.time / this.duration;
+      if (percent < 0 || percent > 1) return;
+
+      const markerEl = document.createElement('div');
+      markerEl.className = 'timeline-marker';
+      markerEl.style.left = `${percent * 100}%`;
+      markerEl.dataset.markerId = index.toString();
+      markerEl.title = `${marker.label} (${this.formatTime(marker.time)})`;
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'marker-label';
+      labelEl.textContent = marker.label;
+      markerEl.appendChild(labelEl);
+
+      // Click to seek to marker
+      markerEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const seekPercent = marker.time / this.duration;
+        this.onSeek(seekPercent);
+      });
+
+      this.sectionMarkersContainer.appendChild(markerEl);
+    });
+  }
+
+  showMarkerContextMenu(e, markerId) {
+    // Remove existing context menu
+    this.hideMarkerContextMenu();
+
+    const marker = this.markers[parseInt(markerId)];
+    if (!marker) return;
+
+    const menu = document.createElement('div');
+    menu.className = 'marker-context-menu';
+    menu.style.left = `${e.clientX}px`;
+    menu.style.top = `${e.clientY}px`;
+
+    menu.innerHTML = `
+      <button class="marker-menu-item" data-action="edit">✏️ Edit</button>
+      <button class="marker-menu-item marker-menu-delete" data-action="delete">🗑️ Delete</button>
+    `;
+
+    menu.querySelector('[data-action="edit"]').addEventListener('click', () => {
+      this.hideMarkerContextMenu();
+      this.onMarkerEdit(parseInt(markerId), marker);
+    });
+
+    menu.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      this.hideMarkerContextMenu();
+      this.onMarkerDelete(parseInt(markerId));
+    });
+
+    document.body.appendChild(menu);
+    this.activeContextMenu = menu;
+
+    // Close on click outside
+    setTimeout(() => {
+      document.addEventListener('click', this.handleContextMenuClose = () => {
+        this.hideMarkerContextMenu();
+      }, { once: true });
+    }, 0);
+  }
+
+  hideMarkerContextMenu() {
+    if (this.activeContextMenu) {
+      this.activeContextMenu.remove();
+      this.activeContextMenu = null;
+    }
+  }
+
+  addMarkerAtTime(time, label = 'New Marker') {
+    this.markers.push({ time, label });
+    this.markers.sort((a, b) => a.time - b.time);
+    this.renderSectionMarkers();
+    return this.markers;
   }
 
   render() {

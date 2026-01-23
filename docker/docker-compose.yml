@@ -1,0 +1,78 @@
+# LooK Mobile Recording - Docker Compose Configuration
+# 
+# Usage:
+#   docker-compose up -d          # Start Android emulator + Appium
+#   docker-compose logs -f        # View logs
+#   docker-compose down           # Stop and remove containers
+#
+# Alternative: use `look mobile-start` command
+
+version: '3.8'
+
+services:
+  # Android Emulator with Appium
+  appium-android:
+    build:
+      context: .
+      dockerfile: Dockerfile.appium-android
+    container_name: look-appium-android
+    privileged: true
+    ports:
+      - "4723:4723"   # Appium server
+      - "5554:5554"   # Emulator console
+      - "5555:5555"   # ADB
+      - "6080:6080"   # noVNC (optional web viewer)
+    environment:
+      # Emulator configuration
+      - EMULATOR_DEVICE=pixel_7
+      - EMULATOR_ARGS=-no-window -no-audio -gpu swiftshader_indirect -memory 2048
+      # Appium settings
+      - APPIUM_LOG_LEVEL=info
+      # Display settings for headless
+      - DISPLAY=:99
+    volumes:
+      # Mount local APK files directory
+      - ./apks:/apks:ro
+      # Mount shared APK directory from host
+      - apk-storage:/data/apks
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4723/status"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    networks:
+      - look-mobile
+
+  # Optional: VNC viewer for debugging (view emulator screen)
+  novnc:
+    image: theasp/novnc:latest
+    container_name: look-novnc
+    ports:
+      - "8080:8080"
+    environment:
+      - DISPLAY_WIDTH=1080
+      - DISPLAY_HEIGHT=2400
+    depends_on:
+      - appium-android
+    networks:
+      - look-mobile
+    profiles:
+      - debug
+
+volumes:
+  apk-storage:
+    driver: local
+
+networks:
+  look-mobile:
+    driver: bridge
+    name: look-mobile-network

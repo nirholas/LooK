@@ -88,6 +88,7 @@
             <!-- Tabs -->
             <div class="sidebar-tabs">
               <button class="tab-btn active" data-tab="script">Script</button>
+              <button class="tab-btn" data-tab="markers">Markers</button>
               <button class="tab-btn" data-tab="settings">Settings</button>
             </div>
 
@@ -118,6 +119,30 @@
               <div class="analysis-section">
                 <h4>AI Analysis</h4>
                 <div id="analysis-display" class="analysis-display"></div>
+              </div>
+            </div>
+
+            <!-- Markers tab -->
+            <div id="markers-tab" class="tab-content hidden">
+              <div class="markers-panel">
+                <div class="markers-header">
+                  <h4>Section Markers</h4>
+                  <button id="add-marker-btn" class="btn btn-secondary btn-small">
+                    ➕ Add Marker
+                  </button>
+                </div>
+                <div class="markers-help">
+                  <p>Double-click on the timeline or press <kbd>M</kbd> to add a marker at the current time.</p>
+                </div>
+                <div class="markers-actions">
+                  <button id="generate-markers-btn" class="btn btn-secondary btn-small" title="Create markers from recorded clicks">
+                    ✨ Generate from Clicks
+                  </button>
+                  <button id="clear-markers-btn" class="btn btn-secondary btn-small btn-danger" title="Remove all markers">
+                    🗑️ Clear All
+                  </button>
+                </div>
+                <div id="markers-list" class="markers-list"></div>
               </div>
             </div>
 

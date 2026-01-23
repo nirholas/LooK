@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Portfolio Demo",
+  "description": "Showcase a creative portfolio website",
+  "url": "https://your-portfolio.com",
+  "output": {
+    "path": "./output/portfolio-demo.mp4",
+    "preset": "instagram"
+  },
+  "timing": {
+    "duration": 30
+  },
+  "voice": {
+    "voice": "shimmer",
+    "style": "casual"
+  },
+  "cursor": {
+    "style": "circle",
+    "size": 36,
+    "color": "#8B5CF6",
+    "glow": true
+  },
+  "clickEffects": {
+    "effect": "spotlight",
+    "color": "#8B5CF6",
+    "size": 80
+  },
+  "zoom": {
+    "mode": "follow",
+    "intensity": 0.6,
+    "maxZoom": 2.0
+  },
+  "interactions": [
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Hero section with name/title"
+    },
+    {
+      "type": "scroll",
+      "to": "work",
+      "smooth": true,
+      "comment": "Scroll to work section"
+    },
+    {
+      "type": "hover",
+      "selector": ".project:first-child",
+      "duration": 2000,
+      "comment": "Hover first project"
+    },
+    {
+      "type": "click",
+      "selector": ".project:first-child",
+      "comment": "Open project"
+    },
+    {
+      "type": "wait",
+      "duration": 3000,
+      "comment": "Show project details"
+    },
+    {
+      "type": "scroll",
+      "to": "project-images",
+      "comment": "Scroll through project"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "click",
+      "selector": ".back-button",
+      "comment": "Go back"
+    },
+    {
+      "type": "scroll",
+      "to": "about",
+      "comment": "Scroll to about"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "scroll",
+      "to": "contact",
+      "comment": "Scroll to contact"
+    },
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show contact info"
+    }
+  ]
+}

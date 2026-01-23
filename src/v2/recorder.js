@@ -5,8 +5,39 @@ import { tmpdir } from 'os';
 import { CursorTracker } from './cursor-tracker.js';
 
 /**
- * Record browser with 60fps cursor tracking
- * Improved version with better click detection and more natural movement
+ * @typedef {import('../types/options.js').RecordingOptions} RecordingOptions
+ * @typedef {import('../types/options.js').ScriptedAction} ScriptedAction
+ * @typedef {import('../types/project.js').CursorData} CursorData
+ */
+
+/**
+ * @typedef {Object} RecordingResult
+ * @property {string} videoPath - Path to the recorded video file
+ * @property {CursorData} cursorData - Cursor tracking data for overlay
+ * @property {string} tempDir - Temporary directory containing recordings
+ */
+
+/**
+ * Record browser with 60fps cursor tracking.
+ * 
+ * Opens a headless browser, navigates to the URL, and records the viewport
+ * while tracking mouse movements and clicks for cursor overlay.
+ * 
+ * @param {string} url - The URL to record
+ * @param {RecordingOptions} [options={}] - Recording options
+ * @param {number} [options.width=1920] - Viewport width in pixels
+ * @param {number} [options.height=1080] - Viewport height in pixels
+ * @param {number} [options.fps=60] - Frames per second for cursor tracking
+ * @param {number} [options.duration=20000] - Recording duration in milliseconds
+ * @param {ScriptedAction[]|null} [options.actions=null] - Optional scripted actions
+ * @returns {Promise<RecordingResult>} Recording result with video path and cursor data
+ * 
+ * @example
+ * const { videoPath, cursorData, tempDir } = await recordBrowser('https://example.com', {
+ *   width: 1920,
+ *   height: 1080,
+ *   duration: 25000
+ * });
  */
 export async function recordBrowser(url, options = {}) {
   const {
@@ -55,10 +86,74 @@ export async function recordBrowser(url, options = {}) {
     });
     
     document.addEventListener('click', (e) => {
+      // Get element context for smart marker generation
+      const target = e.target;
+      const rect = target.getBoundingClientRect();
+      
+      // Extract meaningful text from the element
+      const getText = (el) => {
+        // Try common patterns
+        const text = el.innerText || el.textContent || '';
+        const trimmed = text.trim().substring(0, 50);
+        // If it's a multi-line text, just take first line
+        return trimmed.split('\n')[0].trim();
+      };
+      
+      // Get element type/role for context
+      const getElementType = (el) => {
+        const tag = el.tagName.toLowerCase();
+        const role = el.getAttribute('role');
+        const type = el.getAttribute('type');
+        const className = el.className || '';
+        
+        if (tag === 'button' || role === 'button') return 'button';
+        if (tag === 'a') return 'link';
+        if (tag === 'input') return type || 'input';
+        if (tag === 'select') return 'dropdown';
+        if (className.includes('card')) return 'card';
+        if (className.includes('menu') || className.includes('nav')) return 'menu';
+        if (className.includes('tab')) return 'tab';
+        if (className.includes('modal') || className.includes('dialog')) return 'modal';
+        return tag;
+      };
+      
+      // Get section context (what part of page)
+      const getSectionContext = (el) => {
+        let current = el;
+        while (current && current !== document.body) {
+          const tag = current.tagName.toLowerCase();
+          const className = (current.className || '').toLowerCase();
+          const id = (current.id || '').toLowerCase();
+          
+          // Check for common section patterns
+          if (tag === 'header' || className.includes('header') || id.includes('header')) return 'header';
+          if (tag === 'footer' || className.includes('footer') || id.includes('footer')) return 'footer';
+          if (tag === 'nav' || className.includes('nav')) return 'navigation';
+          if (className.includes('hero') || id.includes('hero')) return 'hero';
+          if (className.includes('pricing') || id.includes('pricing')) return 'pricing';
+          if (className.includes('feature') || id.includes('feature')) return 'features';
+          if (className.includes('testimonial') || id.includes('testimonial')) return 'testimonials';
+          if (className.includes('contact') || id.includes('contact')) return 'contact';
+          if (className.includes('faq') || id.includes('faq')) return 'faq';
+          if (className.includes('about') || id.includes('about')) return 'about';
+          
+          current = current.parentElement;
+        }
+        return 'content';
+      };
+      
       window.__clicks.push({
         x: e.clientX,
         y: e.clientY,
-        t: performance.now()
+        t: performance.now(),
+        element: {
+          text: getText(target),
+          type: getElementType(target),
+          tag: target.tagName.toLowerCase(),
+          section: getSectionContext(target),
+          ariaLabel: target.getAttribute('aria-label') || '',
+          placeholder: target.getAttribute('placeholder') || ''
+        }
       });
     });
   });
@@ -91,7 +186,7 @@ export async function recordBrowser(url, options = {}) {
       cursorTracker.record(pos.x, pos.y, startTime + pos.t);
     }
     for (const click of pageData.clicks) {
-      cursorTracker.recordClick(click.x, click.y, startTime + click.t);
+      cursorTracker.recordClick(click.x, click.y, startTime + click.t, click.element);
     }
 
     await sleep(1000); // Final pause
@@ -114,8 +209,18 @@ export async function recordBrowser(url, options = {}) {
 }
 
 /**
- * Auto-demo: intelligently navigate the page with engaging interactions
- * Improved with better element detection and more natural click patterns
+ * Auto-demo: intelligently navigate the page with engaging interactions.
+ * 
+ * Performs an automated walkthrough of the page with natural-looking
+ * mouse movements, scrolling, and clicks on interactive elements.
+ * 
+ * @param {import('playwright').Page} page - Playwright page instance
+ * @param {CursorTracker} cursorTracker - Cursor tracker for recording positions
+ * @param {number} duration - Total demo duration in milliseconds
+ * @param {number} width - Viewport width in pixels
+ * @param {number} height - Viewport height in pixels
+ * @returns {Promise<void>}
+ * @private
  */
 async function autoDemo(page, cursorTracker, duration, width, height) {
   const startTime = Date.now();
@@ -161,13 +266,50 @@ async function autoDemo(page, cursorTracker, duration, width, height) {
 
   const maxScroll = Math.max(0, pageInfo.pageHeight - pageInfo.viewportHeight);
   
-  // Helper to find visible clickable element at current scroll
+  // Helper to find visible clickable element at current scroll with element context
   const findVisibleClickable = async () => {
     return await page.evaluate(() => {
       const selectors = [
         'button:not([disabled])', 'a.btn', '.btn', '[class*="button"]:not([disabled])',
         '[class*="cta"]', 'a[href]:not([href^="#"])', '[role="button"]'
       ];
+      
+      // Helper to get section context
+      const getSectionContext = (el) => {
+        let current = el;
+        while (current && current !== document.body) {
+          const tag = current.tagName.toLowerCase();
+          const className = (current.className || '').toLowerCase();
+          const id = (current.id || '').toLowerCase();
+          
+          if (tag === 'header' || className.includes('header') || id.includes('header')) return 'header';
+          if (tag === 'footer' || className.includes('footer') || id.includes('footer')) return 'footer';
+          if (tag === 'nav' || className.includes('nav')) return 'navigation';
+          if (className.includes('hero') || id.includes('hero')) return 'hero';
+          if (className.includes('pricing') || id.includes('pricing')) return 'pricing';
+          if (className.includes('feature') || id.includes('feature')) return 'features';
+          if (className.includes('testimonial') || id.includes('testimonial')) return 'testimonials';
+          if (className.includes('contact') || id.includes('contact')) return 'contact';
+          if (className.includes('faq') || id.includes('faq')) return 'faq';
+          if (className.includes('about') || id.includes('about')) return 'about';
+          
+          current = current.parentElement;
+        }
+        return 'content';
+      };
+      
+      // Helper to get element type
+      const getElementType = (el) => {
+        const tag = el.tagName.toLowerCase();
+        const role = el.getAttribute('role');
+        const className = el.className || '';
+        
+        if (tag === 'button' || role === 'button') return 'button';
+        if (tag === 'a') return 'link';
+        if (className.includes('cta') || className.includes('CTA')) return 'cta';
+        if (className.includes('card')) return 'card';
+        return tag;
+      };
       
       for (const sel of selectors) {
         const elements = document.querySelectorAll(sel);
@@ -177,10 +319,19 @@ async function autoDemo(page, cursorTracker, duration, width, height) {
           if (rect.top > 80 && rect.top < window.innerHeight - 80 &&
               rect.left > 50 && rect.left < window.innerWidth - 50 &&
               rect.width > 40 && rect.height > 25) {
+            const text = (el.innerText || el.textContent || '').trim().substring(0, 50).split('\\n')[0].trim();
             return { 
               x: rect.left + rect.width / 2, 
               y: rect.top + rect.height / 2,
-              text: (el.textContent || '').substring(0, 20).trim()
+              text: text.substring(0, 30),
+              element: {
+                text: text,
+                type: getElementType(el),
+                tag: el.tagName.toLowerCase(),
+                section: getSectionContext(el),
+                ariaLabel: el.getAttribute('aria-label') || '',
+                placeholder: el.getAttribute('placeholder') || ''
+              }
             };
           }
         }
@@ -205,7 +356,7 @@ async function autoDemo(page, cursorTracker, duration, width, height) {
     await sleep(200);
     // Perform actual click to trigger visual feedback
     await page.mouse.click(heroBtn.x, heroBtn.y);
-    cursorTracker.recordClick(heroBtn.x, heroBtn.y, Date.now());
+    cursorTracker.recordClick(heroBtn.x, heroBtn.y, Date.now(), heroBtn.element);
     await sleep(600);
   }
   
@@ -234,7 +385,7 @@ async function autoDemo(page, cursorTracker, duration, width, height) {
       await smoothMoveCursor(page, cursorTracker, clickTarget.x, clickTarget.y, 350);
       await sleep(150);
       await page.mouse.click(clickTarget.x, clickTarget.y);
-      cursorTracker.recordClick(clickTarget.x, clickTarget.y, Date.now());
+      cursorTracker.recordClick(clickTarget.x, clickTarget.y, Date.now(), clickTarget.element);
       await sleep(400);
     }
     
@@ -253,7 +404,18 @@ async function autoDemo(page, cursorTracker, duration, width, height) {
 }
 
 /**
- * Smooth cursor movement simulation
+ * Smooth cursor movement simulation with easing.
+ * 
+ * Moves the cursor from its current position to the target coordinates
+ * using cubic ease-out interpolation for natural-looking movement.
+ * 
+ * @param {import('playwright').Page} page - Playwright page instance
+ * @param {CursorTracker} cursorTracker - Cursor tracker for recording positions
+ * @param {number} targetX - Target X coordinate
+ * @param {number} targetY - Target Y coordinate
+ * @param {number} duration - Movement duration in milliseconds
+ * @returns {Promise<void>}
+ * @private
  */
 async function smoothMoveCursor(page, cursorTracker, targetX, targetY, duration) {
   const steps = 30;
@@ -276,7 +438,16 @@ async function smoothMoveCursor(page, cursorTracker, targetX, targetY, duration)
 }
 
 /**
- * Execute a scripted action
+ * Execute a scripted action during recording.
+ * 
+ * Performs click, scroll, hover, type, or wait actions as defined
+ * in the scripted actions array.
+ * 
+ * @param {import('playwright').Page} page - Playwright page instance
+ * @param {ScriptedAction} action - The action to execute
+ * @param {CursorTracker} cursorTracker - Cursor tracker for recording positions
+ * @returns {Promise<void>}
+ * @private
  */
 async function executeAction(page, action, cursorTracker) {
   switch (action.type) {
@@ -332,6 +503,13 @@ async function executeAction(page, action, cursorTracker) {
   }
 }
 
+/**
+ * Promisified sleep utility.
+ * 
+ * @param {number} ms - Duration to sleep in milliseconds
+ * @returns {Promise<void>}
+ * @private
+ */
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

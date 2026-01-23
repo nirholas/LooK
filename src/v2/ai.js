@@ -5,12 +5,29 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import sharp from 'sharp';
 
+/**
+ * @typedef {import('../types/ai.js').AIProviders} AIProviders
+ * @typedef {import('../types/ai.js').WebsiteAnalysis} WebsiteAnalysis
+ * @typedef {import('../types/ai.js').WebsiteMetadata} WebsiteMetadata
+ * @typedef {import('../types/ai.js').ScriptOptions} ScriptOptions
+ * @typedef {import('../types/ai.js').VoiceoverOptions} VoiceoverOptions
+ * @typedef {import('../types/ai.js').DemoAction} DemoAction
+ * @typedef {import('../types/ai.js').CompressedImage} CompressedImage
+ */
+
+/** @type {OpenAI|null} */
 let openai = null;
+
+/** @type {OpenAI|null} */
 let groq = null;
 
 /**
- * Get OpenAI client (lazy initialized)
- * Required for: Vision analysis, TTS voiceover
+ * Get OpenAI client (lazy initialized).
+ * Required for: Vision analysis, TTS voiceover.
+ * 
+ * @returns {OpenAI} OpenAI client instance
+ * @throws {Error} If OPENAI_API_KEY environment variable is not set
+ * @private
  */
 function getOpenAI() {
   if (!openai) {
@@ -23,9 +40,12 @@ function getOpenAI() {
 }
 
 /**
- * Get Groq client (lazy initialized)
- * Used for: Script generation (free tier available)
- * Falls back to OpenAI if GROQ_API_KEY not set
+ * Get Groq client (lazy initialized).
+ * Used for: Script generation (free tier available).
+ * Falls back to OpenAI if GROQ_API_KEY not set.
+ * 
+ * @returns {OpenAI|null} Groq client (OpenAI-compatible) or null if not configured
+ * @private
  */
 function getGroq() {
   if (!groq) {
@@ -42,7 +62,19 @@ function getGroq() {
 }
 
 /**
- * Check which AI providers are available
+ * Check which AI providers are available based on environment variables.
+ * 
+ * Useful for checking configuration before running AI-dependent operations.
+ * 
+ * @returns {AIProviders} Object indicating which providers are configured
+ * @property {boolean} openai - True if OPENAI_API_KEY is set
+ * @property {boolean} groq - True if GROQ_API_KEY is set
+ * 
+ * @example
+ * const providers = getAvailableProviders();
+ * if (!providers.openai) {
+ *   console.log('Set OPENAI_API_KEY for vision and TTS features');
+ * }
  */
 export function getAvailableProviders() {
   return {
@@ -52,7 +84,14 @@ export function getAvailableProviders() {
 }
 
 /**
- * Compress and resize image for GPT-4V (max ~20MB, but smaller is faster)
+ * Compress and resize image for GPT-4V (max ~20MB, but smaller is faster).
+ * 
+ * Resizes to max 1024px width and converts to JPEG with 80% quality.
+ * This reduces API costs and improves response time.
+ * 
+ * @param {string} base64Png - Base64-encoded PNG image data
+ * @returns {Promise<CompressedImage>} Compressed image with base64 data and MIME type
+ * @private
  */
 async function compressForVision(base64Png) {
   try {
@@ -79,7 +118,26 @@ async function compressForVision(base64Png) {
 }
 
 /**
- * Analyze website screenshot with GPT-4 Vision
+ * Analyze website screenshot with GPT-4 Vision.
+ * 
+ * Uses GPT-4o to analyze a screenshot and extract structured information
+ * about the product, including name, tagline, features, and suggested demo actions.
+ * 
+ * @param {string} screenshotBase64 - Base64-encoded screenshot image
+ * @param {WebsiteMetadata} [metadata={}] - Additional context about the website
+ * @param {string} [metadata.url] - The page URL
+ * @param {string} [metadata.title] - The page title
+ * @param {string} [metadata.description] - Meta description
+ * @returns {Promise<WebsiteAnalysis>} Structured analysis of the website
+ * @throws {Error} If OpenAI API key is not set or API call fails
+ * 
+ * @example
+ * const screenshot = await page.screenshot({ encoding: 'base64' });
+ * const analysis = await analyzeWebsite(screenshot, {
+ *   url: 'https://example.com',
+ *   title: 'Example Product'
+ * });
+ * console.log(analysis.keyFeatures);
  */
 export async function analyzeWebsite(screenshotBase64, metadata = {}) {
   // Compress image to avoid 500 errors from oversized requests
@@ -148,8 +206,27 @@ Analyze the screenshot and return JSON with:
 }
 
 /**
- * Generate voiceover script
- * Uses Groq (free) if available, falls back to OpenAI
+ * Generate voiceover script from website analysis.
+ * Uses Groq (free) if available, falls back to OpenAI.
+ * 
+ * Creates a natural, engaging script based on the product analysis
+ * with configurable style and duration.
+ * 
+ * @param {WebsiteAnalysis} analysis - Analysis result from analyzeWebsite
+ * @param {ScriptOptions} [options={}] - Script generation options
+ * @param {number} [options.duration=30] - Target duration in seconds (~2.5 words/sec)
+ * @param {'professional'|'casual'|'energetic'|'minimal'} [options.style='professional'] - Script tone
+ * @param {boolean} [options.includeCallToAction=true] - Include CTA at the end
+ * @param {'groq'|'openai'|null} [options.forceProvider=null] - Force specific AI provider
+ * @returns {Promise<string>} Generated voiceover script
+ * @throws {Error} If no AI provider is available or API call fails
+ * 
+ * @example
+ * const script = await generateScript(analysis, {
+ *   duration: 25,
+ *   style: 'casual',
+ *   includeCallToAction: true
+ * });
  */
 export async function generateScript(analysis, options = {}) {
   const {
@@ -232,7 +309,25 @@ Just the script, nothing else.`
 }
 
 /**
- * Generate voiceover audio using OpenAI TTS
+ * Generate voiceover audio using OpenAI TTS.
+ * 
+ * Converts text script to high-quality MP3 audio using OpenAI's TTS-1-HD model.
+ * Supports multiple voices with adjustable speed.
+ * 
+ * @param {string} script - The text to convert to speech
+ * @param {VoiceoverOptions} [options={}] - TTS options
+ * @param {'alloy'|'echo'|'fable'|'onyx'|'nova'|'shimmer'} [options.voice='nova'] - Voice selection
+ * @param {number} [options.speed=1.0] - Speech speed (0.25 to 4.0)
+ * @param {string|null} [options.outputPath=null] - Output file path (temp file if not provided)
+ * @returns {Promise<string>} Path to the generated MP3 audio file
+ * @throws {Error} If OpenAI API key is not set or TTS fails
+ * 
+ * @example
+ * const audioPath = await generateVoiceover(script, {
+ *   voice: 'alloy',
+ *   speed: 1.1,
+ *   outputPath: './output/voiceover.mp3'
+ * });
  */
 export async function generateVoiceover(script, options = {}) {
   const {
@@ -269,7 +364,21 @@ export async function generateVoiceover(script, options = {}) {
 }
 
 /**
- * Suggest demo actions based on analysis
+ * Suggest demo actions based on website analysis.
+ * 
+ * Creates a sequence of scroll, hover, and wait actions to showcase
+ * the key focus points identified by AI analysis.
+ * 
+ * @param {WebsiteAnalysis} analysis - Analysis result from analyzeWebsite
+ * @param {number} viewportWidth - Browser viewport width in pixels
+ * @param {number} viewportHeight - Browser viewport height in pixels
+ * @returns {DemoAction[]} Array of demo actions to execute
+ * 
+ * @example
+ * const actions = suggestDemoActions(analysis, 1920, 1080);
+ * for (const action of actions) {
+ *   await executeAction(page, action);
+ * }
  */
 export function suggestDemoActions(analysis, viewportWidth, viewportHeight) {
   const actions = [];

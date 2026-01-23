@@ -12,9 +12,20 @@
     "demo": "node bin/repovideo.js demo",
     "quick": "node bin/repovideo.js quick",
     "serve": "node bin/repovideo.js serve",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
     "build:ui": "cd ui && npm install && npm run build",
     "dev:ui": "cd ui && npm install && npm run dev",
-    "test": "echo \"No tests yet\" && exit 0"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ bin/ --ext .js,.ts",
+    "lint:fix": "eslint src/ bin/ --ext .js,.ts --fix",
+    "format": "prettier --write \"src/**/*.{js,ts}\" \"bin/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts}\" \"bin/**/*.js\"",
+    "prepublishOnly": "npm test && npm run build:ui",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "demo",
@@ -42,7 +53,32 @@
     "webdriverio": "^9.0.0",
     "ws": "^8.19.0"
   },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^20.19.30",
+    "@vitest/coverage-v8": "^2.0.0",
+    "@vitest/ui": "^2.0.0",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "vitest": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/LooK.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/LooK/issues"
+  },
+  "homepage": "https://github.com/nirholas/LooK#readme",
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "ui/dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }

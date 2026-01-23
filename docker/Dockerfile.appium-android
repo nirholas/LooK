@@ -1,0 +1,90 @@
+# LooK Mobile Recording - Android Appium Docker Image
+# Provides a ready-to-use Android emulator with Appium for mobile app recording
+#
+# Build: docker build -f Dockerfile.appium-android -t look-appium-android .
+# Run:   docker run -d --privileged -p 4723:4723 -p 5554:5554 -p 5555:5555 look-appium-android
+
+FROM budtmo/docker-android:emulator_14.0
+
+LABEL maintainer="LooK Demo Generator"
+LABEL description="Android emulator with Appium for mobile app recording"
+LABEL version="1.0"
+
+# Environment variables
+ENV APPIUM_VERSION=2.4.1
+ENV UIAUTOMATOR2_VERSION=3.0.4
+ENV ANDROID_AVD_NAME=Pixel_7_API_34
+ENV DEVICE_NAME="Pixel 7"
+ENV EMULATOR_DEVICE="pixel_7"
+ENV ANDROID_PLATFORM_VERSION=14.0
+ENV EMULATOR_ARGS="-no-window -no-audio -gpu swiftshader_indirect -memory 2048"
+
+# Install Node.js (required for Appium)
+USER root
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Appium globally
+RUN npm install -g appium@${APPIUM_VERSION}
+
+# Install UiAutomator2 driver for Android
+RUN appium driver install uiautomator2@${UIAUTOMATOR2_VERSION}
+
+# Create directory for APK files
+RUN mkdir -p /apks && chmod 777 /apks
+
+# Create healthcheck script
+COPY <<EOF /healthcheck.sh
+#!/bin/bash
+# Check if Appium is responding
+curl -s http://localhost:4723/status | grep -q '"ready":true' && exit 0 || exit 1
+EOF
+RUN chmod +x /healthcheck.sh
+
+# Create startup script
+COPY <<EOF /start-appium.sh
+#!/bin/bash
+set -e
+
+echo "🤖 Starting Android Emulator..."
+# Wait for emulator to be ready (handled by base image)
+sleep 5
+
+echo "📱 Waiting for device to be ready..."
+adb wait-for-device
+adb shell getprop sys.boot_completed | grep -q "1" || sleep 30
+
+echo "🚀 Starting Appium server..."
+appium server \
+    --address 0.0.0.0 \
+    --port 4723 \
+    --use-drivers uiautomator2 \
+    --allow-cors \
+    --relaxed-security \
+    --log-level info
+EOF
+RUN chmod +x /start-appium.sh
+
+# Expose ports
+# 4723 - Appium server
+# 5554 - Emulator console
+# 5555 - ADB
+EXPOSE 4723 5554 5555
+
+# Health check - verify Appium is ready
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD /healthcheck.sh
+
+# Volume for APK files
+VOLUME ["/apks"]
+
+# Working directory
+WORKDIR /apks
+
+# Default command - start Appium after emulator is ready
+CMD ["/start-appium.sh"]

@@ -1,0 +1,52 @@
+# Docker ignore file for LooK mobile builds
+
+# Node modules (not needed in container)
+node_modules/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+output/
+*.mp4
+*.webm
+*.gif
+
+# Development files
+tests/
+examples/
+docs/
+*.md
+!README.md
+
+# Config files not needed in container
+.prettierrc
+.prettierignore
+eslint.config.js
+tsconfig.json
+vitest.config.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# UI (web editor not needed for mobile recording)
+ui/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

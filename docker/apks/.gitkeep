@@ -1,0 +1,19 @@
+# APK Files Directory
+
+Place your Android APK files here for recording demos.
+
+## Usage
+
+```bash
+# Start the mobile Docker environment
+look mobile-start
+
+# Record a demo with an APK in this directory
+look mobile ./docker/apks/your-app.apk
+```
+
+## Notes
+
+- APK files in this directory are automatically mounted into the Docker container
+- Files are mounted read-only for security
+- The container will install the APK automatically when you run `look mobile`

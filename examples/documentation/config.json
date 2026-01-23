@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Developer Documentation Demo",
+  "description": "Walkthrough of API documentation site",
+  "url": "https://docs.your-api.com",
+  "output": {
+    "path": "./output/docs-demo.mp4",
+    "preset": "youtube"
+  },
+  "timing": {
+    "duration": 60
+  },
+  "voice": {
+    "voice": "echo",
+    "style": "professional"
+  },
+  "cursor": {
+    "style": "crosshair",
+    "size": 28,
+    "preset": "github"
+  },
+  "clickEffects": {
+    "effect": "ring",
+    "color": "#238636",
+    "size": 50
+  },
+  "zoom": {
+    "mode": "basic",
+    "maxZoom": 1.5
+  },
+  "interactions": [
+    {
+      "type": "wait",
+      "duration": 2000,
+      "comment": "Show docs landing"
+    },
+    {
+      "type": "click",
+      "selector": ".search-input",
+      "comment": "Focus search"
+    },
+    {
+      "type": "type",
+      "text": "authentication",
+      "comment": "Search for auth docs"
+    },
+    {
+      "type": "wait",
+      "duration": 1500,
+      "comment": "Show search results"
+    },
+    {
+      "type": "click",
+      "selector": ".search-result:first-child",
+      "comment": "Select first result"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "scroll",
+      "to": "code-example",
+      "comment": "Scroll to code"
+    },
+    {
+      "type": "hover",
+      "selector": ".code-block",
+      "duration": 3000,
+      "comment": "Highlight code example"
+    },
+    {
+      "type": "click",
+      "selector": ".copy-button",
+      "comment": "Copy code"
+    },
+    {
+      "type": "wait",
+      "duration": 1500
+    },
+    {
+      "type": "scroll",
+      "to": "api-reference",
+      "comment": "Scroll to API reference"
+    },
+    {
+      "type": "click",
+      "selector": ".endpoint-expand",
+      "comment": "Expand endpoint details"
+    },
+    {
+      "type": "wait",
+      "duration": 2000
+    },
+    {
+      "type": "click",
+      "selector": ".try-it-button",
+      "comment": "Open API explorer"
+    },
+    {
+      "type": "wait",
+      "duration": 3000,
+      "comment": "Show API playground"
+    }
+  ]
+}
