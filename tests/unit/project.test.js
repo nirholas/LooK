@@ -375,13 +375,13 @@ describe('Project', () => {
 
     it('should skip invalid project directories', async () => {
       mockAccess.mockResolvedValue(undefined);
-      mockReaddir.mockResolvedValue(['valid', 'invalid']);
+      mockReaddir.mockResolvedValue(['good-project', 'broken-project']);
       mockStat.mockResolvedValue({ isDirectory: () => true });
       mockReadFile.mockImplementation((path) => {
-        if (path.includes('valid')) {
+        if (path.includes('good-project')) {
           return Promise.resolve(JSON.stringify({
-            id: 'valid',
-            url: 'https://valid.com',
+            id: 'good-project',
+            url: 'https://good.com',
             createdAt: '2024-01-01T00:00:00.000Z',
             updatedAt: '2024-01-01T00:00:00.000Z'
           }));
@@ -392,7 +392,7 @@ describe('Project', () => {
       const projects = await Project.list();
       
       expect(projects).toHaveLength(1);
-      expect(projects[0].id).toBe('valid');
+      expect(projects[0].id).toBe('good-project');
     });
   });
 

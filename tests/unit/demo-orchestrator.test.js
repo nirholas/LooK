@@ -494,7 +494,7 @@ describe('ErrorRecovery', () => {
       const stats = recovery.getStats();
       
       expect(stats).toHaveProperty('totalErrors');
-      expect(stats).toHaveProperty('byType'); // Uses 'byType' instead of 'errorsByType'
+      expect(stats).toHaveProperty('errorsByType');
     });
   });
 });
@@ -514,9 +514,9 @@ describe('TransitionManager', () => {
     it('should set current position', () => {
       manager.setPosition(100, 200);
       
-      // TransitionManager uses x/y properties
-      expect(manager.x).toBe(100);
-      expect(manager.y).toBe(200);
+      // TransitionManager stores position in currentPosition object
+      expect(manager.currentPosition.x).toBe(100);
+      expect(manager.currentPosition.y).toBe(200);
     });
   });
   
@@ -526,8 +526,8 @@ describe('TransitionManager', () => {
       
       await manager.smoothMoveTo(100, 100, 100);
       
-      expect(manager.x).toBe(100);
-      expect(manager.y).toBe(100);
+      expect(manager.currentPosition.x).toBe(100);
+      expect(manager.currentPosition.y).toBe(100);
     });
     
     it('should call page mouse move', async () => {

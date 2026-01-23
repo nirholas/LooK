@@ -208,7 +208,8 @@ describe('AI Module', () => {
       const result = await generateScript(analysis, { duration: 30, style: 'professional' });
       
       expect(result).toBe('Generated voiceover script');
-      expect(capturedParams.messages[0].content).toContain('professional');
+      // The style is translated to a descriptive phrase
+      expect(capturedParams.messages[0].content).toContain('Clear, confident, and authoritative');
     });
 
     it('should support different script styles', async () => {
@@ -230,7 +231,8 @@ describe('AI Module', () => {
       
       await generateScript({ name: 'Test' }, { style: 'casual' });
       
-      expect(capturedContent).toContain('casual');
+      // The style is translated to a descriptive phrase
+      expect(capturedContent).toContain('Friendly and conversational');
     });
 
     it('should include call to action when requested', async () => {
@@ -324,8 +326,11 @@ describe('AI Module', () => {
       const analysis = { focusPoints: [] };
       const actions = suggestDemoActions(analysis, 1920, 1080);
       
-      expect(actions).toHaveLength(1);
+      // With empty focus points, should still have: wait, scroll, wait (3 actions)
+      expect(actions).toHaveLength(3);
       expect(actions[0].type).toBe('wait');
+      expect(actions[1].type).toBe('scroll');
+      expect(actions[2].type).toBe('wait');
     });
 
     it('should add hover actions for high importance points', async () => {

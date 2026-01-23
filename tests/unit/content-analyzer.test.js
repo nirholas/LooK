@@ -1,460 +1,280 @@
-/**
- * Unit tests for src/v2/content-analyzer.js
- * 
- * Tests content analysis, section scoring, product story extraction,
- * content deduplication, demo moment detection, and narrative generation.
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  ContentAnalyzer,
-  PageContent,
   ContentSection,
   ProductStory,
+  PageContent,
   ContentDeduplicator,
-  generateDemoNarrative
+  ContentAnalyzer
 } from '../../src/v2/content-analyzer.js';
-
-// ============================================================================
-// ContentSection Tests
-// ============================================================================
 
 describe('ContentSection', () => {
   describe('constructor', () => {
     it('should create section with required properties', () => {
       const section = new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 }
-      });
-
-      expect(section.type).toBe('hero');
-      expect(section.bounds.x).toBe(0);
-      expect(section.demoScore).toBe(50); // default
-    });
-
-    it('should apply all optional properties', () => {
-      const section = new ContentSection({
-        type: 'feature',
-        bounds: { x: 10, y: 20, width: 80, height: 40 },
-        heading: 'Amazing Feature',
-        description: 'This feature is great',
-        demoScore: 85,
-        interactives: ['button', 'input'],
-        keywords: ['feature', 'amazing'],
-        skipReason: null
-      });
-
-      expect(section.type).toBe('feature');
-      expect(section.heading).toBe('Amazing Feature');
-      expect(section.demoScore).toBe(85);
-      expect(section.interactives).toHaveLength(2);
-      expect(section.keywords).toContain('amazing');
-    });
-  });
-
-  describe('getPixelBounds', () => {
-    it('should convert percentage bounds to pixels', () => {
-      const section = new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 50 }
-      });
-
-      const pixels = section.getPixelBounds(1920, 1080);
-
-      expect(pixels.x).toBe(0);
-      expect(pixels.y).toBe(0);
-      expect(pixels.width).toBe(1920);
-      expect(pixels.height).toBe(540);
-    });
-
-    it('should handle non-zero offsets', () => {
-      const section = new ContentSection({
-        type: 'sidebar',
-        bounds: { x: 75, y: 10, width: 25, height: 80 }
-      });
-
-      const pixels = section.getPixelBounds(1000, 800);
-
-      expect(pixels.x).toBe(750);
-      expect(pixels.y).toBe(80);
-      expect(pixels.width).toBe(250);
-      expect(pixels.height).toBe(640);
-    });
-  });
-
-  describe('getCenter', () => {
-    it('should return center coordinates', () => {
-      const section = new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 50 }
-      });
-
-      const center = section.getCenter(1920, 1080);
-
-      expect(center.x).toBe(960);
-      expect(center.y).toBe(270);
-    });
-
-    it('should handle offset sections', () => {
-      const section = new ContentSection({
-        type: 'feature',
-        bounds: { x: 20, y: 30, width: 60, height: 40 }
-      });
-
-      const center = section.getCenter(100, 100);
-
-      expect(center.x).toBe(50); // 20 + 60/2
-      expect(center.y).toBe(50); // 30 + 40/2
-    });
-  });
-
-  describe('shouldSkip', () => {
-    it('should return false when no skip reason', () => {
-      const section = new ContentSection({
+        id: 'section-1',
         type: 'hero',
         bounds: { x: 0, y: 0, width: 100, height: 50 },
-        skipReason: null
+        headline: 'Welcome to our product',
+        importance: 'high',
+        demoScore: 80
       });
 
-      expect(section.shouldSkip()).toBe(false);
+      expect(section.id).toBe('section-1');
+      expect(section.type).toBe('hero');
+      expect(section.bounds).toEqual({ x: 0, y: 0, width: 100, height: 50 });
+      expect(section.headline).toBe('Welcome to our product');
+      expect(section.importance).toBe('high');
+      expect(section.demoScore).toBe(80);
     });
 
-    it('should return true when skip reason is set', () => {
+    it('should provide default values for optional properties', () => {
       const section = new ContentSection({
-        type: 'cookie-banner',
-        bounds: { x: 0, y: 90, width: 100, height: 10 },
-        skipReason: 'Cookie consent banner'
+        id: 'section-2',
+        type: 'content'
       });
 
-      expect(section.shouldSkip()).toBe(true);
+      expect(section.id).toBe('section-2');
+      expect(section.type).toBe('content');
+      expect(section.bounds).toEqual({ x: 0, y: 0, width: 100, height: 20 });
+      expect(section.headline).toBe('');
+      expect(section.importance).toBe('medium');
+      expect(section.demoScore).toBe(50);
+      expect(section.visualElements).toEqual([]);
+      expect(section.interactives).toEqual([]);
     });
   });
-});
 
-// ============================================================================
-// ProductStory Tests
-// ============================================================================
+  describe('shouldInclude', () => {
+    it('should include sections with high demoScore', () => {
+      const section = new ContentSection({
+        id: 'section-1',
+        type: 'features',
+        demoScore: 80
+      });
+
+      expect(section.shouldInclude()).toBe(true);
+    });
+
+    it('should include sections with medium importance', () => {
+      const section = new ContentSection({
+        id: 'section-2',
+        type: 'content',
+        demoScore: 50,
+        importance: 'high'
+      });
+
+      expect(section.shouldInclude()).toBe(true);
+    });
+
+    it('should exclude sections with low scores', () => {
+      const section = new ContentSection({
+        id: 'section-3',
+        type: 'footer',
+        demoScore: 10,
+        importance: 'low'
+      });
+
+      expect(section.shouldInclude()).toBe(false);
+    });
+  });
+
+});
 
 describe('ProductStory', () => {
   describe('constructor', () => {
-    it('should create story with required properties', () => {
+    it('should create story with all fields', () => {
       const story = new ProductStory({
-        productName: 'Amazing App',
-        tagline: 'The best app ever'
+        problem: 'Users struggle with complex workflows',
+        solution: 'Our intuitive interface simplifies everything',
+        features: ['Drag and drop', 'Real-time sync', 'AI assistance'],
+        proof: ['10,000 happy users', '5-star ratings'],
+        cta: 'Start free trial',
+        keyBenefit: 'Save 10 hours per week'
       });
 
-      expect(story.productName).toBe('Amazing App');
-      expect(story.tagline).toBe('The best app ever');
-      expect(story.valueProps).toEqual([]); // default
+      expect(story.problem).toBe('Users struggle with complex workflows');
+      expect(story.solution).toBe('Our intuitive interface simplifies everything');
+      expect(story.features).toEqual(['Drag and drop', 'Real-time sync', 'AI assistance']);
+      expect(story.proof).toEqual(['10,000 happy users', '5-star ratings']);
+      expect(story.cta).toBe('Start free trial');
+      expect(story.keyBenefit).toBe('Save 10 hours per week');
     });
 
-    it('should apply all optional properties', () => {
-      const story = new ProductStory({
-        productName: 'SaaS Tool',
-        tagline: 'Work smarter',
-        valueProps: ['Fast', 'Secure', 'Reliable'],
-        targetAudience: 'Developers',
-        callToAction: 'Start Free Trial',
-        brandTone: 'Professional'
-      });
+    it('should provide empty defaults', () => {
+      const story = new ProductStory({});
 
-      expect(story.valueProps).toHaveLength(3);
-      expect(story.targetAudience).toBe('Developers');
-      expect(story.callToAction).toBe('Start Free Trial');
-      expect(story.brandTone).toBe('Professional');
-    });
-  });
-
-  describe('generateNarrativeHook', () => {
-    it('should generate a narrative hook from story', () => {
-      const story = new ProductStory({
-        productName: 'DataFlow',
-        tagline: 'Automate your data pipelines',
-        valueProps: ['No-code automation', 'Real-time sync']
-      });
-
-      const hook = story.generateNarrativeHook();
-
-      expect(hook).toContain('DataFlow');
-      expect(typeof hook).toBe('string');
-      expect(hook.length).toBeGreaterThan(10);
-    });
-
-    it('should include value props in hook', () => {
-      const story = new ProductStory({
-        productName: 'SecureVault',
-        tagline: 'Your data, protected',
-        valueProps: ['End-to-end encryption']
-      });
-
-      const hook = story.generateNarrativeHook();
-
-      expect(hook).toBeDefined();
+      expect(story.problem).toBe('');
+      expect(story.solution).toBe('');
+      expect(story.features).toEqual([]);
+      expect(story.proof).toEqual([]);
+      expect(story.cta).toBe('');
+      expect(story.keyBenefit).toBe('');
     });
   });
 
-  describe('toJSON', () => {
-    it('should serialize story to JSON', () => {
+  describe('isComplete', () => {
+    it('should return true when all required fields are present', () => {
       const story = new ProductStory({
-        productName: 'TestApp',
-        tagline: 'For testing',
-        valueProps: ['Easy', 'Fast'],
-        targetAudience: 'Testers'
+        problem: 'Problem here',
+        solution: 'Solution here',
+        features: ['Feature 1', 'Feature 2'],
+        keyBenefit: 'Key benefit here'
       });
 
-      const json = story.toJSON();
+      expect(story.isComplete()).toBe(true);
+    });
 
-      expect(json.productName).toBe('TestApp');
-      expect(json.valueProps).toEqual(['Easy', 'Fast']);
-      expect(json.targetAudience).toBe('Testers');
+    it('should return false when missing fields', () => {
+      const story = new ProductStory({
+        problem: 'Problem here'
+      });
+
+      expect(story.isComplete()).toBe(false);
+    });
+  });
+
+  describe('toNarrative', () => {
+    it('should generate narrative hook from story', () => {
+      const story = new ProductStory({
+        problem: 'Users struggle with time management',
+        solution: 'Our AI scheduler automates your day',
+        keyBenefit: 'Get back 2 hours daily',
+        features: ['Smart scheduling', 'Calendar sync'],
+        proof: ['Used by Fortune 500 companies']
+      });
+
+      const narrative = story.toNarrative();
+
+      expect(typeof narrative).toBe('string');
+      expect(narrative.length).toBeGreaterThan(0);
+    });
+
+    it('should return empty string for incomplete story', () => {
+      const story = new ProductStory({});
+      
+      expect(story.toNarrative()).toBe('');
     });
   });
 });
 
-// ============================================================================
-// PageContent Tests
-// ============================================================================
-
 describe('PageContent', () => {
-  let pageContent;
-
-  beforeEach(() => {
-    pageContent = new PageContent({
-      url: 'https://example.com',
-      title: 'Example Page'
-    });
-  });
-
   describe('constructor', () => {
-    it('should create page content with required properties', () => {
-      expect(pageContent.url).toBe('https://example.com');
-      expect(pageContent.title).toBe('Example Page');
-      expect(pageContent.sections).toEqual([]);
-      expect(pageContent.productStory).toBeNull();
+    it('should initialize with empty collections', () => {
+      const content = new PageContent();
+
+      expect(content.sections).toEqual([]);
+      expect(content.productStory).toBeDefined();
+      expect(content.usps).toEqual([]);
+      expect(content.demoMoments).toEqual([]);
+      expect(content.skipRegions).toEqual([]);
+      expect(content.narrativeFlow).toEqual([]);
+      expect(content.suggestedNarrative).toBe('');
+      expect(content.transitionHint).toBeNull();
     });
   });
 
-  describe('addSection', () => {
-    it('should add a section', () => {
-      const section = new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 }
-      });
+  describe('getRankedSections', () => {
+    it('should return sections sorted by demoScore descending', () => {
+      const content = new PageContent();
+      content.sections = [
+        new ContentSection({ id: '1', type: 'content', demoScore: 50 }),
+        new ContentSection({ id: '2', type: 'hero', demoScore: 90 }),
+        new ContentSection({ id: '3', type: 'features', demoScore: 75 })
+      ];
 
-      pageContent.addSection(section);
+      const ranked = content.getRankedSections();
 
-      expect(pageContent.sections).toHaveLength(1);
-      expect(pageContent.sections[0].type).toBe('hero');
+      expect(ranked[0].id).toBe('2'); // demoScore 90
+      expect(ranked[1].id).toBe('3'); // demoScore 75
+      expect(ranked[2].id).toBe('1'); // demoScore 50
     });
   });
 
   describe('getSectionsByType', () => {
     it('should filter sections by type', () => {
-      pageContent.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 }
-      }));
-      pageContent.addSection(new ContentSection({
-        type: 'feature',
-        bounds: { x: 0, y: 30, width: 100, height: 25 }
-      }));
-      pageContent.addSection(new ContentSection({
-        type: 'feature',
-        bounds: { x: 0, y: 55, width: 100, height: 25 }
-      }));
+      const content = new PageContent();
+      content.sections = [
+        new ContentSection({ id: '1', type: 'hero' }),
+        new ContentSection({ id: '2', type: 'features' }),
+        new ContentSection({ id: '3', type: 'features' }),
+        new ContentSection({ id: '4', type: 'cta' })
+      ];
 
-      const features = pageContent.getSectionsByType('feature');
+      const features = content.getSectionsByType('features');
 
       expect(features).toHaveLength(2);
+      expect(features[0].id).toBe('2');
+      expect(features[1].id).toBe('3');
     });
-  });
 
-  describe('getTopSections', () => {
-    it('should return sections sorted by demo score', () => {
-      pageContent.addSection(new ContentSection({
-        type: 'footer',
-        bounds: { x: 0, y: 90, width: 100, height: 10 },
-        demoScore: 20
-      }));
-      pageContent.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        demoScore: 95
-      }));
-      pageContent.addSection(new ContentSection({
-        type: 'feature',
-        bounds: { x: 0, y: 30, width: 100, height: 30 },
-        demoScore: 75
-      }));
-
-      const top = pageContent.getTopSections(2);
-
-      expect(top).toHaveLength(2);
-      expect(top[0].demoScore).toBe(95);
-      expect(top[1].demoScore).toBe(75);
-    });
-  });
-
-  describe('getDemoMoments', () => {
-    beforeEach(() => {
-      pageContent.demoMoments = [
-        { type: 'animation', priority: 'high' },
-        { type: 'interaction', priority: 'medium' },
-        { type: 'reveal', priority: 'low' }
+    it('should return empty array for non-existent type', () => {
+      const content = new PageContent();
+      content.sections = [
+        new ContentSection({ id: '1', type: 'hero' })
       ];
-    });
 
-    it('should return all demo moments', () => {
-      const moments = pageContent.getDemoMoments();
-      expect(moments).toHaveLength(3);
-    });
+      const pricing = content.getSectionsByType('pricing');
 
-    it('should filter by priority', () => {
-      const highPriority = pageContent.getDemoMoments('high');
-      expect(highPriority).toHaveLength(1);
-      expect(highPriority[0].type).toBe('animation');
+      expect(pricing).toHaveLength(0);
     });
   });
 
-  describe('getContentFingerprint', () => {
-    it('should generate consistent fingerprint', () => {
-      pageContent.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome'
-      }));
+  describe('getHeroSection', () => {
+    it('should return the hero section', () => {
+      const content = new PageContent();
+      content.sections = [
+        new ContentSection({ id: '1', type: 'features' }),
+        new ContentSection({ id: '2', type: 'hero', headline: 'Welcome!' }),
+        new ContentSection({ id: '3', type: 'cta' })
+      ];
 
-      const fingerprint1 = pageContent.getContentFingerprint();
-      const fingerprint2 = pageContent.getContentFingerprint();
+      const hero = content.getHeroSection();
 
-      expect(fingerprint1).toBe(fingerprint2);
+      expect(hero).toBeDefined();
+      expect(hero.id).toBe('2');
+      expect(hero.headline).toBe('Welcome!');
     });
 
-    it('should generate different fingerprints for different content', () => {
-      const page1 = new PageContent({ url: 'https://a.com', title: 'A' });
-      page1.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome A'
-      }));
+    it('should return null if no hero section', () => {
+      const content = new PageContent();
+      content.sections = [
+        new ContentSection({ id: '1', type: 'features' })
+      ];
 
-      const page2 = new PageContent({ url: 'https://b.com', title: 'B' });
-      page2.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome B'
-      }));
+      const hero = content.getHeroSection();
 
-      expect(page1.getContentFingerprint()).not.toBe(page2.getContentFingerprint());
+      expect(hero).toBeNull();
+    });
+  });
+
+  describe('toJSON and fromJSON', () => {
+    it('should serialize and deserialize correctly', () => {
+      const original = new PageContent();
+      original.sections = [
+        new ContentSection({ id: '1', type: 'hero', headline: 'Test', demoScore: 85 })
+      ];
+      original.productStory = new ProductStory({
+        problem: 'Test problem',
+        solution: 'Test solution',
+        keyBenefit: 'Test benefit'
+      });
+      original.usps = ['Fast', 'Reliable'];
+      original.demoMoments = [{ time: 5, action: 'click' }];
+      original.suggestedNarrative = 'Test narrative';
+
+      const json = original.toJSON();
+      const restored = PageContent.fromJSON(json);
+
+      expect(restored.sections).toHaveLength(1);
+      expect(restored.sections[0].id).toBe('1');
+      expect(restored.sections[0].headline).toBe('Test');
+      expect(restored.productStory.problem).toBe('Test problem');
+      expect(restored.usps).toEqual(['Fast', 'Reliable']);
+      expect(restored.demoMoments).toEqual([{ time: 5, action: 'click' }]);
+      expect(restored.suggestedNarrative).toBe('Test narrative');
     });
   });
 });
-
-// ============================================================================
-// ContentAnalyzer Tests
-// ============================================================================
-
-describe('ContentAnalyzer', () => {
-  let analyzer;
-  let mockAI;
-
-  beforeEach(() => {
-    mockAI = {
-      deepAnalyzeContent: vi.fn().mockResolvedValue({
-        sections: [
-          {
-            type: 'hero',
-            bounds: { x: 0, y: 0, width: 100, height: 35 },
-            heading: 'Build Faster',
-            demoScore: 90
-          }
-        ],
-        productStory: {
-          productName: 'FastBuild',
-          tagline: 'Build faster, deploy smarter'
-        },
-        demoMoments: [
-          { type: 'hover', location: { x: 50, y: 20 } }
-        ],
-        skipRegions: []
-      })
-    };
-
-    analyzer = new ContentAnalyzer(mockAI);
-  });
-
-  describe('analyzeStructure', () => {
-    it('should analyze page structure from screenshot', async () => {
-      const screenshot = Buffer.from('fake-screenshot');
-      const result = await analyzer.analyzeStructure(screenshot, 'https://example.com');
-
-      expect(mockAI.deepAnalyzeContent).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(PageContent);
-      expect(result.sections.length).toBeGreaterThan(0);
-    });
-
-    it('should extract product story', async () => {
-      const screenshot = Buffer.from('fake-screenshot');
-      const result = await analyzer.analyzeStructure(screenshot, 'https://example.com');
-
-      expect(result.productStory).toBeInstanceOf(ProductStory);
-      expect(result.productStory.productName).toBe('FastBuild');
-    });
-  });
-
-  describe('extractProductStory', () => {
-    it('should create ProductStory from analysis data', () => {
-      const storyData = {
-        productName: 'CloudSync',
-        tagline: 'Sync everywhere',
-        valueProps: ['Fast', 'Secure']
-      };
-
-      const story = analyzer.extractProductStory(storyData);
-
-      expect(story).toBeInstanceOf(ProductStory);
-      expect(story.productName).toBe('CloudSync');
-    });
-  });
-
-  describe('findDemoMoments', () => {
-    it('should identify demo-worthy moments', async () => {
-      const screenshot = Buffer.from('fake-screenshot');
-      const result = await analyzer.analyzeStructure(screenshot, 'https://example.com');
-
-      expect(result.demoMoments).toBeDefined();
-      expect(Array.isArray(result.demoMoments)).toBe(true);
-    });
-  });
-
-  describe('scoreContentSections', () => {
-    it('should assign demo scores to sections', () => {
-      const sections = [
-        new ContentSection({
-          type: 'hero',
-          bounds: { x: 0, y: 0, width: 100, height: 30 },
-          heading: 'Welcome'
-        }),
-        new ContentSection({
-          type: 'footer',
-          bounds: { x: 0, y: 90, width: 100, height: 10 }
-        })
-      ];
-
-      const scored = analyzer.scoreContentSections(sections);
-
-      // Hero should score higher than footer
-      const hero = scored.find(s => s.type === 'hero');
-      const footer = scored.find(s => s.type === 'footer');
-
-      expect(hero.demoScore).toBeGreaterThan(footer.demoScore);
-    });
-  });
-});
-
-// ============================================================================
-// ContentDeduplicator Tests
-// ============================================================================
 
 describe('ContentDeduplicator', () => {
   let deduplicator;
@@ -463,256 +283,215 @@ describe('ContentDeduplicator', () => {
     deduplicator = new ContentDeduplicator();
   });
 
-  describe('isDuplicate', () => {
-    it('should identify duplicate content', () => {
-      const content1 = new PageContent({ url: 'https://a.com', title: 'Home' });
-      content1.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome to our site',
-        description: 'We offer great products'
-      }));
-
-      const content2 = new PageContent({ url: 'https://a.com/about', title: 'About' });
-      content2.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome to our site',
-        description: 'We offer great products'
-      }));
-
-      // First is not duplicate
-      expect(deduplicator.isDuplicate(content1)).toBe(false);
+  describe('markAsSeen', () => {
+    it('should track new fingerprints', () => {
+      const fingerprint = JSON.stringify({ structure: 'NAV>A>A', hasNav: true });
       
-      // Add first to seen
-      deduplicator.markAsSeen(content1);
+      deduplicator.markAsSeen(fingerprint, { url: 'https://example.com' });
       
-      // Second is duplicate
-      expect(deduplicator.isDuplicate(content2)).toBe(true);
+      expect(deduplicator.seenContent.has(fingerprint)).toBe(true);
+      expect(deduplicator.seenContent.get(fingerprint).count).toBe(1);
     });
 
-    it('should not flag unique content as duplicate', () => {
-      const content1 = new PageContent({ url: 'https://a.com', title: 'Home' });
-      content1.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome Home'
-      }));
-
-      const content2 = new PageContent({ url: 'https://a.com/pricing', title: 'Pricing' });
-      content2.addSection(new ContentSection({
-        type: 'pricing',
-        bounds: { x: 0, y: 0, width: 100, height: 50 },
-        heading: 'Our Pricing Plans'
-      }));
-
-      deduplicator.markAsSeen(content1);
-
-      expect(deduplicator.isDuplicate(content2)).toBe(false);
+    it('should increment count for existing fingerprints', () => {
+      const fingerprint = JSON.stringify({ structure: 'NAV>A>A', hasNav: true });
+      
+      deduplicator.markAsSeen(fingerprint, { url: 'page1.com' });
+      deduplicator.markAsSeen(fingerprint, { url: 'page2.com' });
+      
+      expect(deduplicator.seenContent.get(fingerprint).count).toBe(2);
     });
   });
 
-  describe('getSimilarity', () => {
-    it('should return high similarity for identical content', () => {
-      const content1 = new PageContent({ url: 'https://a.com', title: 'Home' });
-      content1.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome',
-        keywords: ['welcome', 'home', 'start']
-      }));
-
-      const content2 = new PageContent({ url: 'https://a.com/copy', title: 'Home Copy' });
-      content2.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome',
-        keywords: ['welcome', 'home', 'start']
-      }));
-
-      const similarity = deduplicator.getSimilarity(content1, content2);
-
-      expect(similarity).toBeGreaterThan(0.8);
+  describe('isRepetitive', () => {
+    it('should detect exact repeated fingerprints', () => {
+      const fingerprint = JSON.stringify({ structure: 'HEADER>NAV', hasNav: true });
+      
+      deduplicator.markAsSeen(fingerprint);
+      deduplicator.markAsSeen(fingerprint);
+      
+      expect(deduplicator.isRepetitive(fingerprint)).toBe(true);
     });
 
-    it('should return low similarity for different content', () => {
-      const content1 = new PageContent({ url: 'https://a.com', title: 'Home' });
-      content1.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome',
-        keywords: ['home', 'welcome']
-      }));
+    it('should not flag first occurrence as repetitive', () => {
+      const fingerprint = JSON.stringify({ structure: 'UNIQUE>DIV', hasNav: false });
+      
+      // First occurrence (count=1) should not be flagged as repetitive
+      // isRepetitive only returns true when count > 1
+      const isRep = deduplicator.isRepetitive(fingerprint);
+      
+      // Before marking as seen, there's no record
+      expect(isRep).toBe(false);
+    });
+  });
 
-      const content2 = new PageContent({ url: 'https://a.com/docs', title: 'Documentation' });
-      content2.addSection(new ContentSection({
-        type: 'documentation',
-        bounds: { x: 0, y: 0, width: 100, height: 80 },
-        heading: 'API Reference',
-        keywords: ['api', 'documentation', 'reference']
-      }));
+  describe('compareFingerprints', () => {
+    it('should return high similarity for identical fingerprints', () => {
+      const fp = JSON.stringify({ 
+        structure: 'NAV>A', 
+        hasLogo: true, 
+        hasNav: true, 
+        hasFooter: false,
+        hasSocial: false,
+        linkCount: 5,
+        textSample: 'home about contact'
+      });
+      
+      const similarity = deduplicator.compareFingerprints(fp, fp);
+      
+      expect(similarity).toBe(1);
+    });
 
-      const similarity = deduplicator.getSimilarity(content1, content2);
-
+    it('should return low similarity for different fingerprints', () => {
+      const fp1 = JSON.stringify({ 
+        structure: 'NAV>A', 
+        hasLogo: true, 
+        hasNav: true, 
+        hasFooter: false,
+        hasSocial: false,
+        linkCount: 10,
+        textSample: 'header nav menu'
+      });
+      
+      const fp2 = JSON.stringify({ 
+        structure: 'FOOTER>DIV', 
+        hasLogo: false, 
+        hasNav: false, 
+        hasFooter: true,
+        hasSocial: true,
+        linkCount: 3,
+        textSample: 'copyright privacy terms'
+      });
+      
+      const similarity = deduplicator.compareFingerprints(fp1, fp2);
+      
       expect(similarity).toBeLessThan(0.5);
     });
-  });
 
-  describe('getUniqueContent', () => {
-    it('should filter out duplicate sections from new content', () => {
-      const existing = new PageContent({ url: 'https://a.com', title: 'Home' });
-      existing.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Welcome'
-      }));
-      existing.addSection(new ContentSection({
-        type: 'nav',
-        bounds: { x: 0, y: 0, width: 100, height: 5 },
-        heading: 'Navigation'
-      }));
-
-      const newPage = new PageContent({ url: 'https://a.com/about', title: 'About' });
-      newPage.addSection(new ContentSection({
-        type: 'nav',
-        bounds: { x: 0, y: 0, width: 100, height: 5 },
-        heading: 'Navigation'
-      }));
-      newPage.addSection(new ContentSection({
-        type: 'about',
-        bounds: { x: 0, y: 10, width: 100, height: 50 },
-        heading: 'About Us'
-      }));
-
-      deduplicator.markAsSeen(existing);
-      const unique = deduplicator.getUniqueContent(newPage);
-
-      // Should only have the 'about' section, nav is duplicate
-      expect(unique.sections).toHaveLength(1);
-      expect(unique.sections[0].type).toBe('about');
+    it('should handle invalid JSON gracefully', () => {
+      const similarity = deduplicator.compareFingerprints('invalid', 'also invalid');
+      
+      expect(similarity).toBe(0);
     });
   });
 
-  describe('reset', () => {
-    it('should clear seen content', () => {
-      const content = new PageContent({ url: 'https://a.com', title: 'Home' });
-      content.addSection(new ContentSection({
-        type: 'hero',
-        bounds: { x: 0, y: 0, width: 100, height: 30 },
-        heading: 'Test'
-      }));
+  describe('isLikelyHeader', () => {
+    it('should detect header sections', () => {
+      const headerSection = new ContentSection({
+        id: '1',
+        type: 'header',
+        bounds: { x: 0, y: 0, width: 100, height: 10 }
+      });
 
-      deduplicator.markAsSeen(content);
-      expect(deduplicator.isDuplicate(content)).toBe(true);
+      expect(deduplicator.isLikelyHeader(headerSection)).toBe(true);
+    });
 
-      deduplicator.reset();
-      expect(deduplicator.isDuplicate(content)).toBe(false);
+    it('should detect nav sections', () => {
+      const navSection = new ContentSection({
+        id: '2',
+        type: 'nav',
+        bounds: { x: 0, y: 5, width: 100, height: 8 }
+      });
+
+      expect(deduplicator.isLikelyHeader(navSection)).toBe(true);
+    });
+
+    it('should detect sections at top of page', () => {
+      const topSection = new ContentSection({
+        id: '3',
+        type: 'content',
+        bounds: { x: 0, y: 5, width: 100, height: 10 }
+      });
+
+      expect(deduplicator.isLikelyHeader(topSection)).toBe(true);
+    });
+
+    it('should not flag mid-page sections as header', () => {
+      const midSection = new ContentSection({
+        id: '4',
+        type: 'content',
+        bounds: { x: 0, y: 40, width: 100, height: 20 }
+      });
+
+      expect(deduplicator.isLikelyHeader(midSection)).toBe(false);
+    });
+  });
+
+  describe('isLikelyFooter', () => {
+    it('should detect footer sections by type', () => {
+      const footerSection = new ContentSection({
+        id: '1',
+        type: 'footer',
+        bounds: { x: 0, y: 90, width: 100, height: 10 }
+      });
+
+      expect(deduplicator.isLikelyFooter(footerSection)).toBe(true);
     });
   });
 });
 
-// ============================================================================
-// generateDemoNarrative Tests
-// ============================================================================
+describe('ContentAnalyzer', () => {
+  let mockPage;
 
-describe('generateDemoNarrative', () => {
-  it('should generate narrative from multiple page contents', () => {
-    const pages = [
-      createMockPageContent('Home', [
-        { type: 'hero', heading: 'Welcome to ProductX' }
-      ]),
-      createMockPageContent('Features', [
-        { type: 'feature', heading: 'Feature 1' },
-        { type: 'feature', heading: 'Feature 2' }
-      ]),
-      createMockPageContent('Pricing', [
-        { type: 'pricing', heading: 'Simple Pricing' }
-      ])
-    ];
-
-    const narrative = generateDemoNarrative(pages);
-
-    expect(narrative).toBeDefined();
-    expect(typeof narrative).toBe('object');
-    expect(narrative.segments).toBeDefined();
-    expect(Array.isArray(narrative.segments)).toBe(true);
+  beforeEach(() => {
+    mockPage = {
+      url: vi.fn().mockReturnValue('https://example.com/page'),
+      viewportSize: vi.fn().mockReturnValue({ width: 1920, height: 1080 }),
+      screenshot: vi.fn().mockResolvedValue('base64screenshot'),
+      evaluate: vi.fn().mockResolvedValue([])
+    };
   });
 
-  it('should order narrative segments logically', () => {
-    const pages = [
-      createMockPageContent('Pricing', [
-        { type: 'pricing', heading: 'Pricing', demoScore: 70 }
-      ]),
-      createMockPageContent('Home', [
-        { type: 'hero', heading: 'Welcome', demoScore: 95 }
-      ])
-    ];
+  describe('constructor', () => {
+    it('should initialize with page and default options', () => {
+      const analyzer = new ContentAnalyzer(mockPage);
 
-    const narrative = generateDemoNarrative(pages);
-
-    // Hero/home should come first
-    expect(narrative.segments[0].pageTitle).toBe('Home');
-  });
-
-  it('should deduplicate across pages', () => {
-    const pages = [
-      createMockPageContent('Home', [
-        { type: 'nav', heading: 'Navigation' },
-        { type: 'hero', heading: 'Welcome' }
-      ]),
-      createMockPageContent('About', [
-        { type: 'nav', heading: 'Navigation' },
-        { type: 'about', heading: 'About Us' }
-      ])
-    ];
-
-    const narrative = generateDemoNarrative(pages, { deduplicate: true });
-
-    // Nav should only appear once across all segments
-    const navCount = narrative.segments.reduce((count, seg) => {
-      return count + seg.sections.filter(s => s.type === 'nav').length;
-    }, 0);
-
-    expect(navCount).toBeLessThanOrEqual(1);
-  });
-
-  it('should include product story in narrative', () => {
-    const page = createMockPageContent('Home', [
-      { type: 'hero', heading: 'Welcome' }
-    ]);
-    page.productStory = new ProductStory({
-      productName: 'TestProduct',
-      tagline: 'Testing made easy'
+      expect(analyzer.page).toBe(mockPage);
+      expect(analyzer.cacheTtl).toBe(300000); // 5 minutes default
+      expect(analyzer.cache).toBeDefined();
+      expect(analyzer.deduplicator).toBeDefined();
     });
 
-    const narrative = generateDemoNarrative([page]);
+    it('should accept custom cache TTL', () => {
+      const analyzer = new ContentAnalyzer(mockPage, { cacheTtl: 60000 });
 
-    expect(narrative.productStory).toBeDefined();
-    expect(narrative.productStory.productName).toBe('TestProduct');
+      expect(analyzer.cacheTtl).toBe(60000);
+    });
+  });
+
+  describe('getCached', () => {
+    it('should return null for uncached URLs', () => {
+      const analyzer = new ContentAnalyzer(mockPage);
+      
+      const result = analyzer.getCached('https://example.com/new');
+      
+      expect(result).toBeNull();
+    });
+
+    it('should return cached content if fresh', () => {
+      const analyzer = new ContentAnalyzer(mockPage);
+      const content = new PageContent();
+      content.suggestedNarrative = 'Test narrative';
+      
+      analyzer.setCache('https://example.com/page', content);
+      const result = analyzer.getCached('https://example.com/page');
+      
+      expect(result).toBeDefined();
+      expect(result.suggestedNarrative).toBe('Test narrative');
+    });
+  });
+
+  describe('setCache', () => {
+    it('should store content with timestamp', () => {
+      const analyzer = new ContentAnalyzer(mockPage);
+      const content = new PageContent();
+      
+      analyzer.setCache('https://example.com/test', content);
+      
+      const cached = analyzer.cache.get('https://example.com/test');
+      expect(cached).toBeDefined();
+      expect(cached.content).toBe(content);
+      expect(typeof cached.timestamp).toBe('number');
+    });
   });
 });
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
-
-/**
- * Create a mock PageContent for testing
- */
-function createMockPageContent(title, sectionConfigs) {
-  const page = new PageContent({
-    url: `https://example.com/${title.toLowerCase()}`,
-    title
-  });
-
-  for (const config of sectionConfigs) {
-    page.addSection(new ContentSection({
-      type: config.type,
-      bounds: { x: 0, y: 0, width: 100, height: 30 },
-      heading: config.heading,
-      demoScore: config.demoScore || 50
-    }));
-  }
-
-  return page;
-}
