@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { program } from 'commander';
-import { generateVideo } from '../src/index.js';
-import { generateDemo, generateDemoV2, generateMobileDemo } from '../src/v2/index.js';
-import { Project } from '../src/v2/project.js';
 import chalk from 'chalk';
+
+// NOTE: Heavy imports are done dynamically in each command action
+// to avoid loading unnecessary modules and to prevent startup failures
+// when certain dependencies (like simple-git for repo command) aren't available.
 
 const banner = `
 ╔═══════════════════════════════════════╗
@@ -29,6 +30,7 @@ program
   .action(async (url, options) => {
     console.log(chalk.cyan('\n🎬 RepoVideo - Terminal Mode\n'));
     try {
+      const { generateVideo } = await import('../src/index.js');
       await generateVideo(url, {
         output: options.output,
         duration: parseInt(options.duration),
@@ -73,6 +75,8 @@ program
   .action(async (url, options) => {
     console.log(chalk.magenta(banner));
     try {
+      // Dynamic import to avoid loading heavy modules on startup
+      const { generateDemo, generateDemoV2 } = await import('../src/v2/index.js');
       // Use V2 engine if --reliable flag is set
       const demoFn = options.reliable ? generateDemoV2 : generateDemo;
       
@@ -245,6 +249,7 @@ program
     console.log(chalk.magenta(banner));
     console.log(chalk.cyan('🚀 Quick mode: generating demo with smart defaults...\n'));
     try {
+      const { generateDemoV2 } = await import('../src/v2/index.js');
       await generateDemoV2(url, {
         output: options.output,
         duration: parseInt(options.duration),
@@ -371,6 +376,7 @@ program
     console.log(chalk.dim(`  • Driver installed: appium driver install ${platform === 'ios' ? 'xcuitest' : 'uiautomator2'}\n`));
     
     try {
+      const { generateMobileDemo } = await import('../src/v2/index.js');
       await generateMobileDemo(app, {
         output: options.output,
         duration: parseInt(options.duration),
@@ -408,17 +414,25 @@ program
   .option('-p, --port <port>', 'Server port (uses PORT env var if set)', '3847')
   .option('--no-open', 'Do not open browser automatically')
   .action(async (options) => {
-    console.log(chalk.magenta(banner));
+    // Skip banner in production for cleaner logs
+    if (!process.env.PORT) {
+      console.log(chalk.magenta(banner));
+    }
     try {
+      console.log(`[serve] Starting server...`);
+      console.log(`[serve] PORT env: ${process.env.PORT || 'not set'}`);
       const { startServer } = await import('../src/v2/server.js');
       // Use PORT env var (Railway sets this) or CLI option
       const port = parseInt(process.env.PORT || options.port);
+      console.log(`[serve] Using port: ${port}`);
       await startServer({
         port,
         openBrowser: options.open !== false && !process.env.PORT // Don't open browser in production
       });
+      console.log(`[serve] Server started successfully`);
     } catch (e) {
       console.error(chalk.red('\n❌ Error:'), e.message);
+      console.error(e.stack);
       process.exit(1);
     }
   });
@@ -435,6 +449,7 @@ program
       // If a project ID is provided, verify it exists
       if (projectId) {
         try {
+          const { Project } = await import('../src/v2/project.js');
           await Project.load(projectId);
           console.log(chalk.dim(`Opening project ${projectId}...\n`));
         } catch (e) {
@@ -466,6 +481,7 @@ program
   .description('List all saved projects')
   .action(async () => {
     try {
+      const { Project } = await import('../src/v2/project.js');
       const projects = await Project.list();
       
       if (projects.length === 0) {
@@ -557,6 +573,7 @@ program
       if (options.full) {
         console.log(chalk.cyan('\n  Running full pipeline test...'));
         try {
+          const { generateDemo } = await import('../src/v2/index.js');
           const result = await generateDemo('https://example.com', {
             duration: 10,
             skipVoice: true,
@@ -811,6 +828,7 @@ program
     try {
       if (isGitHub) {
         console.log(chalk.dim('Detected GitHub URL, using terminal mode...\n'));
+        const { generateVideo } = await import('../src/index.js');
         await generateVideo(url, {
           output: options.output,
           duration: parseInt(options.duration),
@@ -819,6 +837,7 @@ program
         });
       } else {
         console.log(chalk.dim('Using web demo mode...\n'));
+        const { generateDemo } = await import('../src/v2/index.js');
         await generateDemo(url, {
           output: options.output,
           duration: parseInt(options.duration),

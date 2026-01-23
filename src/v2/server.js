@@ -48,6 +48,8 @@ function sendToClient(ws, type, data) {
  * Start the web UI server
  */
 export async function startServer(options = {}) {
+  console.log('[server] startServer called with options:', JSON.stringify(options));
+  
   const {
     port = process.env.PORT || 3847,
     openBrowser = true,
@@ -55,6 +57,7 @@ export async function startServer(options = {}) {
   } = options;
 
   const actualPort = parseInt(port, 10);
+  console.log(`[server] Configured: host=${host}, port=${actualPort}`);
 
   const app = express();
   const server = createServer(app);
