@@ -405,15 +405,17 @@ program
 program
   .command('serve')
   .description('Start the L👀K web editor UI')
-  .option('-p, --port <port>', 'Server port', '3847')
+  .option('-p, --port <port>', 'Server port (uses PORT env var if set)', '3847')
   .option('--no-open', 'Do not open browser automatically')
   .action(async (options) => {
     console.log(chalk.magenta(banner));
     try {
       const { startServer } = await import('../src/v2/server.js');
+      // Use PORT env var (Railway sets this) or CLI option
+      const port = parseInt(process.env.PORT || options.port);
       await startServer({
-        port: parseInt(options.port),
-        openBrowser: options.open !== false
+        port,
+        openBrowser: options.open !== false && !process.env.PORT // Don't open browser in production
       });
     } catch (e) {
       console.error(chalk.red('\n❌ Error:'), e.message);

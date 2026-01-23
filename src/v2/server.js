@@ -49,9 +49,12 @@ function sendToClient(ws, type, data) {
  */
 export async function startServer(options = {}) {
   const {
-    port = 3847,
-    openBrowser = true
+    port = process.env.PORT || 3847,
+    openBrowser = true,
+    host = process.env.HOST || '0.0.0.0'
   } = options;
+
+  const actualPort = parseInt(port, 10);
 
   const app = express();
   const server = createServer(app);
@@ -924,7 +927,8 @@ export async function startServer(options = {}) {
   // ============================================================
 
   return new Promise((resolve) => {
-    server.listen(port, () => {
+    // Bind to 0.0.0.0 to allow external connections (required for Docker/Railway)
+    server.listen(port, '0.0.0.0', () => {
       const url = `http://localhost:${port}`;
       console.log(chalk.green(`\n✨ L👀K Editor running at ${chalk.bold(url)}\n`));
       
