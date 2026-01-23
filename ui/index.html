@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>L👀K Editor</title>
+  <title>L👀K — AI-Powered Demo Videos</title>
+  <meta name="description" content="Create stunning product demos in seconds with AI. Professional videos, zero effort.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👀</text></svg>">
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
@@ -12,11 +14,11 @@
     <header class="header">
       <div class="header-left">
         <h1 class="logo">L<span class="eyes">👀</span>K</h1>
-        <span class="tagline">Editor</span>
+        <span class="tagline">Studio</span>
       </div>
       <div class="header-right">
         <button id="export-btn" class="btn btn-primary" disabled>
-          <span class="icon">📤</span> Export
+          <span class="icon">✨</span> Export
         </button>
       </div>
     </header>
@@ -26,27 +28,27 @@
       <!-- Start screen -->
       <section id="start-screen" class="start-screen">
         <div class="start-content">
-          <h2>Create a Demo Video</h2>
-          <p>Enter a URL to analyze and generate a professional demo video</p>
+          <h2>Create stunning demos in seconds</h2>
+          <p>Transform any website into a professional product video with AI-powered recording, smart zoom, and auto-narration.</p>
           
           <form id="analyze-form" class="analyze-form">
             <input 
               type="url" 
               id="url-input" 
-              placeholder="https://example.com" 
+              placeholder="Paste your website URL..." 
               required
               class="url-input"
             >
             <div class="form-buttons">
               <button type="submit" class="btn btn-primary btn-large">
-                <span class="icon">🔍</span> Analyze
+                <span class="icon">✨</span> Generate Demo
               </button>
               <button type="button" id="live-record-btn" class="btn btn-secondary btn-large">
-                <span class="icon">🔴</span> Live Record
+                <span class="icon">🎬</span> Live Record
               </button>
             </div>
           </form>
-          <p class="form-hint">Use <strong>Analyze</strong> for AI-driven automatic recording, or <strong>Live Record</strong> to watch and control in real-time.</p>
+          <p class="form-hint"><strong>Generate Demo</strong> uses AI to automatically create your video. <strong>Live Record</strong> gives you real-time control.</p>
 
           <div id="recent-projects" class="recent-projects">
             <h3>Recent Projects</h3>

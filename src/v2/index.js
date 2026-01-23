@@ -803,6 +803,12 @@ export { PacingController, calculateAdaptiveTiming } from './pacing-controller.j
 export { ErrorRecovery } from './error-recovery.js';
 export { TransitionManager } from './transition-manager.js';
 
+// Page analysis components
+export { StateDetector } from './state-detector.js';
+export { ElementDiscovery } from './element-discovery.js';
+export { ContentAnalyzer } from './content-analyzer.js';
+export { NavigationGraph } from './navigation-graph.js';
+
 // Export enhanced AI module for advanced usage
 export {
   analyzeWebsiteEnhanced,

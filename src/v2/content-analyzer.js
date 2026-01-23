@@ -74,6 +74,7 @@ export class ContentSection {
     this.type = data.type || 'content';
     this.bounds = data.bounds || { x: 0, y: 0, width: 100, height: 20 };
     this.headline = data.headline || '';
+    this.heading = this.headline; // Alias for tests
     this.subheadline = data.subheadline || '';
     this.visualElements = data.visualElements || [];
     this.interactives = data.interactives || [];
@@ -81,6 +82,14 @@ export class ContentSection {
     this.importance = data.importance || 'medium';
     this.skipReason = data.skipReason || null;
     this.suggestedDuration = data.suggestedDuration || 3;
+  }
+
+  /**
+   * Check if this section should be skipped
+   * @returns {boolean}
+   */
+  shouldSkip() {
+    return this.skipReason !== null;
   }
 
   /**
@@ -129,12 +138,21 @@ export class ProductStory {
    * @param {ProductStoryData} [data] - Story data
    */
   constructor(data = {}) {
+    // Original fields
     this.problem = data.problem || '';
     this.solution = data.solution || '';
     this.features = data.features || [];
     this.proof = data.proof || [];
     this.cta = data.cta || '';
     this.keyBenefit = data.keyBenefit || '';
+    
+    // Additional fields for test compatibility
+    this.productName = data.productName || '';
+    this.tagline = data.tagline || '';
+    this.valueProps = data.valueProps || [];
+    this.targetAudience = data.targetAudience || '';
+    this.callToAction = data.callToAction || '';
+    this.brandTone = data.brandTone || '';
   }
 
   /**
@@ -167,18 +185,65 @@ export class ProductStory {
     
     return parts.join(' ');
   }
+
+  /**
+   * Generate a narrative hook from the story
+   * @returns {string}
+   */
+  generateNarrativeHook() {
+    const parts = [];
+    
+    if (this.productName) {
+      parts.push(`Introducing ${this.productName}`);
+    }
+    if (this.tagline) {
+      parts.push(`- ${this.tagline}.`);
+    }
+    if (this.valueProps && this.valueProps.length > 0) {
+      parts.push(`With ${this.valueProps.join(', ')}.`);
+    }
+    
+    return parts.join(' ') || 'Discover what this product can do for you.';
+  }
+
+  /**
+   * Serialize to JSON
+   * @returns {Object}
+   */
+  toJSON() {
+    return {
+      problem: this.problem,
+      solution: this.solution,
+      features: this.features,
+      proof: this.proof,
+      cta: this.cta,
+      keyBenefit: this.keyBenefit,
+      productName: this.productName,
+      tagline: this.tagline,
+      valueProps: this.valueProps,
+      targetAudience: this.targetAudience,
+      callToAction: this.callToAction,
+      brandTone: this.brandTone
+    };
+  }
 }
 
 /**
  * Represents analyzed page content
  */
 export class PageContent {
-  constructor() {
+  constructor(data = {}) {
+    /** @type {string} */
+    this.url = data.url || '';
+    
+    /** @type {string} */
+    this.title = data.title || '';
+    
     /** @type {ContentSection[]} */
     this.sections = [];
     
-    /** @type {ProductStory} */
-    this.productStory = new ProductStory();
+    /** @type {ProductStory|null} */
+    this.productStory = null;
     
     /** @type {string[]} */
     this.usps = [];
@@ -200,6 +265,45 @@ export class PageContent {
     
     /** @type {number} */
     this.timestamp = Date.now();
+  }
+
+  /**
+   * Add a section to this page content
+   * @param {ContentSection} section
+   */
+  addSection(section) {
+    this.sections.push(section);
+  }
+
+  /**
+   * Get demo moments, optionally filtered by priority
+   * @param {string} [priority] - Optional priority filter ('high', 'medium', 'low')
+   * @returns {DemoMomentData[]}
+   */
+  getDemoMoments(priority) {
+    if (!priority) {
+      return this.demoMoments;
+    }
+    return this.demoMoments.filter(m => m.priority === priority);
+  }
+
+  /**
+   * Generate a content fingerprint for deduplication
+   * @returns {string}
+   */
+  getContentFingerprint() {
+    const content = this.sections.map(s => `${s.type}:${s.headline || s.heading || ''}`).join('|');
+    return `${this.url}:${content}`;
+  }
+
+  /**
+   * Get top sections sorted by demo score
+   * @param {number} [limit] - Maximum number of sections
+   * @returns {ContentSection[]}
+   */
+  getTopSections(limit) {
+    const sorted = [...this.sections].sort((a, b) => b.demoScore - a.demoScore);
+    return limit ? sorted.slice(0, limit) : sorted;
   }
 
   /**

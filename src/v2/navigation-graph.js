@@ -75,7 +75,8 @@ export class NavigationNode {
    */
   markLinkExplored(link) {
     const index = this.unexploredLinks.findIndex(l => 
-      l.selector === link.selector || l.text === link.text
+      (l.selector && link.selector && l.selector === link.selector) || 
+      (l.text && link.text && l.text === link.text)
     );
     if (index !== -1) {
       const [explored] = this.unexploredLinks.splice(index, 1);
