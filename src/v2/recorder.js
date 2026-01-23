@@ -6,6 +6,7 @@ import { CursorTracker } from './cursor-tracker.js';
 
 /**
  * Record browser with 60fps cursor tracking
+ * Improved version with better click detection and more natural movement
  */
 export async function recordBrowser(url, options = {}) {
   const {
@@ -20,12 +21,13 @@ export async function recordBrowser(url, options = {}) {
   await mkdir(tempDir, { recursive: true });
 
   const cursorTracker = new CursorTracker({ fps });
-  let mouseX = width / 2;
-  let mouseY = height / 2;
+  
+  // Initialize cursor at center
+  cursorTracker.record(width / 2, height / 2, Date.now());
 
   const browser = await chromium.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
   });
 
   const context = await browser.newContext({
@@ -38,19 +40,17 @@ export async function recordBrowser(url, options = {}) {
 
   const page = await context.newPage();
 
-  // Track mouse movements via CDP
-  const client = await page.context().newCDPSession(page);
-  
-  // Inject mouse tracking
+  // Track mouse movements via injected script
   await page.addInitScript(() => {
     window.__cursorPositions = [];
     window.__clicks = [];
+    window.__startTime = performance.now();
     
     document.addEventListener('mousemove', (e) => {
       window.__cursorPositions.push({
         x: e.clientX,
         y: e.clientY,
-        t: performance.now()
+        t: performance.now() - window.__startTime
       });
     });
     
@@ -114,82 +114,142 @@ export async function recordBrowser(url, options = {}) {
 }
 
 /**
- * Auto-demo: intelligently navigate the page with full scroll
+ * Auto-demo: intelligently navigate the page with engaging interactions
+ * Improved with better element detection and more natural click patterns
  */
 async function autoDemo(page, cursorTracker, duration, width, height) {
   const startTime = Date.now();
   
-  // Get page dimensions
+  // Get page info and find key interactive elements
   const pageInfo = await page.evaluate(() => {
+    const findElements = (selectors) => {
+      const results = [];
+      for (const sel of selectors) {
+        document.querySelectorAll(sel).forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 30 && rect.height > 20 && rect.top >= 0 && rect.left >= 0) {
+            results.push({
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+              scrollY: window.scrollY,
+              type: el.tagName.toLowerCase(),
+              text: (el.textContent || '').substring(0, 30).trim()
+            });
+          }
+        });
+      }
+      return results;
+    };
+
     return {
       pageHeight: document.body.scrollHeight,
-      viewportHeight: window.innerHeight
+      viewportHeight: window.innerHeight,
+      // Find clickable elements
+      buttons: findElements([
+        'button', 'a.btn', '.btn', '[class*="button"]', '[class*="Button"]',
+        '[class*="cta"]', '[class*="CTA"]', 'a[href]', '[role="button"]'
+      ]).slice(0, 20),
+      // Find feature cards and sections
+      features: findElements([
+        '[class*="feature"]', '[class*="card"]', '[class*="benefit"]',
+        '[class*="pricing"]', 'section', 'article'
+      ]).slice(0, 10),
+      // Find form inputs
+      inputs: findElements(['input', 'textarea', 'select']).slice(0, 5)
     };
   });
 
   const maxScroll = Math.max(0, pageInfo.pageHeight - pageInfo.viewportHeight);
   
-  // Initial pause at top - show hero section
-  await sleep(2000);
-  cursorTracker.record(width / 2, height / 3, Date.now());
+  // Helper to find visible clickable element at current scroll
+  const findVisibleClickable = async () => {
+    return await page.evaluate(() => {
+      const selectors = [
+        'button:not([disabled])', 'a.btn', '.btn', '[class*="button"]:not([disabled])',
+        '[class*="cta"]', 'a[href]:not([href^="#"])', '[role="button"]'
+      ];
+      
+      for (const sel of selectors) {
+        const elements = document.querySelectorAll(sel);
+        for (const el of elements) {
+          const rect = el.getBoundingClientRect();
+          // Check if element is visible in viewport (not too close to edges)
+          if (rect.top > 80 && rect.top < window.innerHeight - 80 &&
+              rect.left > 50 && rect.left < window.innerWidth - 50 &&
+              rect.width > 40 && rect.height > 25) {
+            return { 
+              x: rect.left + rect.width / 2, 
+              y: rect.top + rect.height / 2,
+              text: (el.textContent || '').substring(0, 20).trim()
+            };
+          }
+        }
+      }
+      return null;
+    });
+  };
+
+  // ===== PHASE 1: Hero Section (first 4 seconds) =====
+  await sleep(1500);
   
-  // Move cursor around hero area
-  await smoothMoveCursor(page, cursorTracker, width * 0.3, height * 0.4, 600);
-  await sleep(500);
-  await smoothMoveCursor(page, cursorTracker, width * 0.7, height * 0.3, 600);
-  await sleep(1000);
-
-  // Calculate scroll segments - divide page into 4-5 sections
-  const numSections = Math.min(5, Math.max(2, Math.ceil(maxScroll / height)));
+  // Start from center-left and scan across hero
+  await smoothMoveCursor(page, cursorTracker, width * 0.25, height * 0.35, 500);
+  await sleep(600);
+  await smoothMoveCursor(page, cursorTracker, width * 0.65, height * 0.35, 800);
+  await sleep(400);
+  
+  // Find and click CTA button in hero
+  let heroBtn = await findVisibleClickable();
+  if (heroBtn) {
+    await smoothMoveCursor(page, cursorTracker, heroBtn.x, heroBtn.y, 400);
+    await sleep(200);
+    // Perform actual click to trigger visual feedback
+    await page.mouse.click(heroBtn.x, heroBtn.y);
+    cursorTracker.recordClick(heroBtn.x, heroBtn.y, Date.now());
+    await sleep(600);
+  }
+  
+  // ===== PHASE 2: Scroll Through Content =====
+  const numSections = Math.min(4, Math.max(2, Math.ceil(maxScroll / height)));
   const scrollPerSection = maxScroll / numSections;
-  const timePerSection = (duration - 6000) / numSections; // Reserve 6s for intro/outro
+  const timePerSection = Math.max(2000, (duration - 8000) / numSections);
 
-  // Scroll through each section
-  for (let i = 1; i <= numSections && Date.now() - startTime < duration - 3000; i++) {
+  for (let i = 1; i <= numSections && Date.now() - startTime < duration - 4000; i++) {
     const targetScroll = Math.min(scrollPerSection * i, maxScroll);
     
     // Smooth scroll
     await page.evaluate((y) => {
       window.scrollTo({ top: y, behavior: 'smooth' });
     }, targetScroll);
-    
-    await sleep(1200); // Wait for scroll animation
+    await sleep(1000);
 
-    // Move cursor to different areas to show content
-    const cursorY = height * (0.3 + Math.random() * 0.4);
-    const cursorX = width * (0.3 + Math.random() * 0.4);
-    await smoothMoveCursor(page, cursorTracker, cursorX, cursorY, 500);
+    // Pan cursor across this section to show content
+    await smoothMoveCursor(page, cursorTracker, width * 0.3, height * 0.4, 400);
+    await sleep(400);
+    await smoothMoveCursor(page, cursorTracker, width * 0.6, height * 0.5, 600);
     
-    // Look for interactive elements in current viewport
-    const clickTarget = await page.evaluate(() => {
-      const buttons = document.querySelectorAll('button, a.btn, [class*="button"], [class*="cta"]');
-      for (const btn of buttons) {
-        const rect = btn.getBoundingClientRect();
-        if (rect.top > 100 && rect.top < window.innerHeight - 100 && rect.width > 50) {
-          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        }
-      }
-      return null;
-    });
-
-    if (clickTarget) {
-      await smoothMoveCursor(page, cursorTracker, clickTarget.x, clickTarget.y, 400);
-      await sleep(300);
+    // Find something to click in this section
+    const clickTarget = await findVisibleClickable();
+    if (clickTarget && Math.random() > 0.3) { // Click 70% of found targets
+      await smoothMoveCursor(page, cursorTracker, clickTarget.x, clickTarget.y, 350);
+      await sleep(150);
+      await page.mouse.click(clickTarget.x, clickTarget.y);
       cursorTracker.recordClick(clickTarget.x, clickTarget.y, Date.now());
-      await sleep(200);
+      await sleep(400);
     }
-
-    // Pause to show content
-    await sleep(Math.max(500, timePerSection - 2500));
+    
+    // Dwell to show content
+    await sleep(Math.max(300, timePerSection - 2200));
   }
 
-  // Scroll back to top smoothly
-  await sleep(500);
+  // ===== PHASE 3: Return to Top =====
+  await sleep(400);
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  await sleep(1500);
+  await sleep(1200);
   
-  // Final cursor position
-  await smoothMoveCursor(page, cursorTracker, width / 2, height / 2, 500);
+  // Final position at center with a subtle movement
+  await smoothMoveCursor(page, cursorTracker, width * 0.5, height * 0.4, 400);
+  await sleep(500);
 }
 
 /**

@@ -1,36 +1,46 @@
 {
-  "name": "repovideo",
+  "name": "look-demo",
   "version": "2.0.0",
-  "description": "AI-powered demo video generator - terminal, web, and pro modes",
+  "description": "AI-powered product demo video generator - one command, professional results",
   "bin": {
+    "look": "./bin/repovideo.js",
     "repovideo": "./bin/repovideo.js"
   },
   "type": "module",
   "scripts": {
     "start": "node bin/repovideo.js",
+    "demo": "node bin/repovideo.js demo",
+    "quick": "node bin/repovideo.js quick",
+    "serve": "node bin/repovideo.js serve",
+    "build:ui": "cd ui && npm install && npm run build",
+    "dev:ui": "cd ui && npm install && npm run dev",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "keywords": [
-    "github",
     "demo",
     "video",
     "ai",
-    "cli",
-    "developer-tools",
+    "product-demo",
     "screen-recording",
-    "cursor-tracking"
+    "cursor-tracking",
+    "automation",
+    "marketing",
+    "saas"
   ],
   "author": "nichbot",
   "license": "MIT",
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
+    "express": "^4.22.1",
     "marked": "^12.0.0",
     "openai": "^4.28.0",
     "ora": "^8.0.1",
     "playwright": "^1.57.0",
     "sharp": "^0.34.0",
-    "simple-git": "^3.22.0"
+    "simple-git": "^3.22.0",
+    "webdriverio": "^9.0.0",
+    "ws": "^8.19.0"
   },
   "engines": {
     "node": ">=18.0.0"

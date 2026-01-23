@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L👀K Editor</title>
+  <script type="module" crossorigin src="/assets/main-Ct4_XBXw.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-Dz7Cubc0.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">L<span class="eyes">👀</span>K</h1>
+        <span class="tagline">Editor</span>
+      </div>
+      <div class="header-right">
+        <button id="export-btn" class="btn btn-primary" disabled>
+          <span class="icon">📤</span> Export
+        </button>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main">
+      <!-- Start screen -->
+      <section id="start-screen" class="start-screen">
+        <div class="start-content">
+          <h2>Create a Demo Video</h2>
+          <p>Enter a URL to analyze and generate a professional demo video</p>
+          
+          <form id="analyze-form" class="analyze-form">
+            <input 
+              type="url" 
+              id="url-input" 
+              placeholder="https://example.com" 
+              required
+              class="url-input"
+            >
+            <button type="submit" class="btn btn-primary btn-large">
+              <span class="icon">🔍</span> Analyze
+            </button>
+          </form>
+
+          <div id="recent-projects" class="recent-projects">
+            <h3>Recent Projects</h3>
+            <ul id="projects-list" class="projects-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Editor screen (hidden initially) -->
+      <section id="editor-screen" class="editor-screen hidden">
+        <div class="editor-layout">
+          <!-- Preview area -->
+          <div class="preview-area">
+            <div class="video-container">
+              <video id="preview-video" class="preview-video"></video>
+              <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
+              <div id="video-controls" class="video-controls">
+                <button id="play-btn" class="control-btn">▶️</button>
+                <span id="time-display" class="time-display">0:00 / 0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" min="0" max="100" value="0">
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline-container">
+              <div id="timeline" class="timeline">
+                <div id="timeline-track" class="timeline-track">
+                  <div id="timeline-progress" class="timeline-progress"></div>
+                  <div id="trim-start" class="trim-handle trim-start"></div>
+                  <div id="trim-end" class="trim-handle trim-end"></div>
+                  <div id="playhead" class="playhead"></div>
+                </div>
+              </div>
+              <div id="timeline-markers" class="timeline-markers">
+                <span class="time-marker">0:00</span>
+                <span class="time-marker"></span>
+                <span class="time-marker"></span>
+                <span class="time-marker"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="sidebar">
+            <!-- Tabs -->
+            <div class="sidebar-tabs">
+              <button class="tab-btn active" data-tab="script">Script</button>
+              <button class="tab-btn" data-tab="settings">Settings</button>
+            </div>
+
+            <!-- Script tab -->
+            <div id="script-tab" class="tab-content active">
+              <div class="script-section">
+                <label for="script-editor">Voiceover Script</label>
+                <textarea 
+                  id="script-editor" 
+                  class="script-editor" 
+                  placeholder="AI-generated script will appear here..."
+                ></textarea>
+                <div class="script-actions">
+                  <select id="voice-select" class="voice-select">
+                    <option value="nova">Nova (warm)</option>
+                    <option value="alloy">Alloy (neutral)</option>
+                    <option value="echo">Echo (male)</option>
+                    <option value="fable">Fable (expressive)</option>
+                    <option value="onyx">Onyx (deep)</option>
+                    <option value="shimmer">Shimmer (bright)</option>
+                  </select>
+                  <button id="regenerate-voice-btn" class="btn btn-secondary">
+                    🔄 Regenerate Voice
+                  </button>
+                </div>
+              </div>
+
+              <div class="analysis-section">
+                <h4>AI Analysis</h4>
+                <div id="analysis-display" class="analysis-display"></div>
+              </div>
+            </div>
+
+            <!-- Settings tab -->
+            <div id="settings-tab" class="tab-content hidden">
+              <div class="settings-group">
+                <h4>Zoom</h4>
+                <div class="setting-row">
+                  <label for="zoom-mode">Mode</label>
+                  <select id="zoom-mode">
+                    <option value="smart">Smart (click-based)</option>
+                    <option value="follow">Follow cursor</option>
+                    <option value="basic">Basic (focus points)</option>
+                    <option value="none">No zoom</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="zoom-intensity">Intensity</label>
+                  <input type="range" id="zoom-intensity" min="0" max="100" value="50">
+                </div>
+                <div class="setting-row">
+                  <label for="zoom-speed">Speed</label>
+                  <select id="zoom-speed">
+                    <option value="slow">Slow</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="fast">Fast</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Cursor</h4>
+                <div class="setting-row">
+                  <label for="cursor-style">Style</label>
+                  <select id="cursor-style">
+                    <option value="default">Default</option>
+                    <option value="pointer">Pointer</option>
+                    <option value="dot">Dot</option>
+                    <option value="circle">Circle</option>
+                    <option value="none">Hidden</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="cursor-size">Size</label>
+                  <input type="range" id="cursor-size" min="12" max="48" value="24">
+                </div>
+                <div class="setting-row">
+                  <label for="cursor-color">Color</label>
+                  <input type="color" id="cursor-color" value="#000000">
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Click Effects</h4>
+                <div class="setting-row">
+                  <label for="click-effect">Style</label>
+                  <select id="click-effect">
+                    <option value="ripple">Ripple</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="ring">Ring</option>
+                    <option value="spotlight">Spotlight</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="click-color">Color</label>
+                  <input type="color" id="click-color" value="#3B82F6">
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Export</h4>
+                <div class="setting-row">
+                  <label for="export-preset">Preset</label>
+                  <select id="export-preset">
+                    <option value="youtube">YouTube (1080p)</option>
+                    <option value="twitter">Twitter (720p)</option>
+                    <option value="instagram">Instagram (1:1)</option>
+                    <option value="tiktok">TikTok (9:16)</option>
+                    <option value="gif">GIF</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <!-- Status bar -->
+    <footer class="status-bar">
+      <span id="status-message" class="status-message">Ready</span>
+      <div id="progress-container" class="progress-container hidden">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </footer>
+
+    <!-- Export modal -->
+    <div id="export-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Export Video</h2>
+        <div class="export-options">
+          <div class="setting-row">
+            <label for="export-format">Format</label>
+            <select id="export-format">
+              <option value="youtube">YouTube (1920x1080)</option>
+              <option value="twitter">Twitter (1280x720)</option>
+              <option value="instagram">Instagram (1080x1080)</option>
+              <option value="tiktok">TikTok (1080x1920)</option>
+              <option value="gif">GIF (640x360)</option>
+            </select>
+          </div>
+        </div>
+        <div id="export-progress" class="export-progress hidden">
+          <div class="progress-bar-container">
+            <div id="export-progress-bar" class="progress-bar"></div>
+          </div>
+          <span id="export-status">Rendering...</span>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-export" class="btn btn-secondary">Cancel</button>
+          <button id="start-export" class="btn btn-primary">
+            <span class="icon">🎬</span> Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
