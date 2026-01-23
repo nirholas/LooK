@@ -32,8 +32,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY ui/package*.json ./ui/
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (production only)
+RUN npm ci --omit=dev
 
 # Install Playwright browsers
 RUN npx playwright install chromium
@@ -45,6 +45,9 @@ RUN cd ui && npm ci && npm run build
 # Copy source
 COPY src/ ./src/
 COPY bin/ ./bin/
+
+# Make bin executable
+RUN chmod +x bin/repovideo.js
 
 # Create data directory
 RUN mkdir -p /root/.repovideo/projects
