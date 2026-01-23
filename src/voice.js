@@ -4,14 +4,24 @@ import { mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-const openai = new OpenAI();
+let openai = null;
+
+function getOpenAI() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required. Set it with: export OPENAI_API_KEY=sk-...');
+    }
+    openai = new OpenAI();
+  }
+  return openai;
+}
 
 export async function generateVoiceover(script, voice = 'alloy') {
   // Create temp directory for audio
   const tempDir = await mkdtemp(join(tmpdir(), 'repovideo-voice-'));
   const outputFile = join(tempDir, 'voiceover.mp3');
 
-  const response = await openai.audio.speech.create({
+  const response = await getOpenAI().audio.speech.create({
     model: 'tts-1',
     voice: voice,
     input: script,

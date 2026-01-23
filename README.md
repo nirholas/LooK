@@ -1,123 +1,166 @@
 # L👀K
 
-AI-powered demo video generator. Give it a URL, get a polished demo video with voiceover.
+**One command. Professional product demo videos.**
 
-## Features
+Turn any website into a polished demo video with AI-generated voiceover. No editing required.
 
-- **🌐 Web Demo Mode** - Record any website with AI-generated script and voiceover
-- **💻 Terminal Mode** - Record GitHub repos with terminal commands (requires VHS)
-- **🤖 AI Vision** - GPT-4V analyzes your site and writes the script
-- **🗣️ AI Voice** - OpenAI TTS generates professional voiceover
-- **📹 60fps Recording** - Smooth browser recording with Playwright
-- **🎨 Pro Effects** - Color grading, vignette, zoom effects
-- **📦 Multi-platform Export** - YouTube, Twitter, Instagram, TikTok, GIF
+```bash
+npx look-demo quick https://your-app.com
+```
+
+That's it. You get a professional demo video in minutes.
+
+## What It Does
+
+1. **Records** your site with smooth cursor animations
+2. **Analyzes** the UI using GPT-4 Vision
+3. **Writes** a compelling voiceover script  
+4. **Narrates** with natural AI voice
+5. **Exports** a polished video ready for YouTube, Twitter, etc.
 
 ## Installation
 
 ```bash
-npm install -g repovideo
-# or
-npx repovideo <url>
+npm install -g look-demo
 ```
 
 **Requirements:**
 - Node.js 18+
-- FFmpeg installed (`brew install ffmpeg` or `apt install ffmpeg`)
+- FFmpeg: `brew install ffmpeg` (Mac) or `apt install ffmpeg` (Linux)
 - OpenAI API key: `export OPENAI_API_KEY=sk-...`
 
-## Usage
+## Quick Start
 
-### Quick Start
+### Fastest Way (Recommended)
 
 ```bash
-# Auto-detect mode based on URL
-repovideo https://myapp.com
-
-# Explicit web demo mode (recommended)
-repovideo demo https://myapp.com
-
-# GitHub repo terminal demo
-repovideo repo https://github.com/user/repo
+look quick https://your-app.com
 ```
 
-### Web Demo Mode (v2)
+This uses smart defaults to create a great demo automatically.
+
+### Full Control
 
 ```bash
-repovideo demo https://free-crypto-news.vercel.app \
+look demo https://your-app.com \
   --output demo.mp4 \
   --duration 30 \
   --voice nova \
   --style professional \
-  --preset youtube
+  --zoom-mode smart
 ```
 
-**Options:**
-- `-o, --output <path>` - Output file (default: `./demo.mp4`)
-- `-d, --duration <sec>` - Video duration (default: 25)
-- `-v, --voice <voice>` - TTS voice: nova, alloy, echo, fable, onyx, shimmer
-- `-s, --style <style>` - Script style: professional, casual, energetic
-- `-p, --preset <preset>` - Export: youtube, twitter, instagram, tiktok, gif
-- `--width <px>` - Recording width (default: 1920)
-- `--height <px>` - Recording height (default: 1080)
-- `--skip-voice` - Skip voiceover generation
-- `--dry-run` - Show AI analysis and script without recording
-
-### Terminal Mode (v1)
-
-Requires [VHS](https://github.com/charmbracelet/vhs) installed.
+### Just Preview (No Recording)
 
 ```bash
-repovideo repo https://github.com/user/repo \
-  --output demo.mp4 \
-  --duration 30
+look demo https://your-app.com --dry-run
 ```
 
-## How It Works
+See the AI analysis and script before recording.
 
-1. **Capture** - Screenshots your site/app
-2. **Analyze** - GPT-4V understands the UI and purpose
-3. **Script** - AI writes a voiceover script
-4. **Record** - Playwright records the browser at 60fps
-5. **Voice** - OpenAI TTS generates narration
-6. **Polish** - FFmpeg applies color grading and effects
-7. **Export** - Output optimized for your platform
+## Features
+
+- **🎬 Smart Zoom** - Camera follows cursor with smooth, professional movement
+- **🖱️ Cursor Effects** - Beautiful cursor with click ripple animations
+- **🤖 AI Vision** - GPT-4V understands your UI and writes the script
+- **🗣️ AI Voice** - Natural voiceover with OpenAI TTS
+- **📹 60fps Recording** - Silky smooth browser capture
+- **🎨 Pro Polish** - Color grading, vignette, motion blur
+- **📱 Multi-Platform** - Export for YouTube, Twitter, Instagram, TikTok
+
+## Options
+
+### Demo Command
+
+```bash
+look demo <url> [options]
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o, --output` | Output file path | `./demo.mp4` |
+| `-d, --duration` | Video duration (seconds) | `25` |
+| `-v, --voice` | TTS voice (nova, alloy, echo, fable, onyx, shimmer) | `nova` |
+| `-s, --style` | Script style (professional, casual, energetic) | `professional` |
+| `-p, --preset` | Export preset (youtube, twitter, instagram, tiktok) | `youtube` |
+| `--zoom-mode` | Zoom behavior (none, basic, smart, follow) | `smart` |
+| `--zoom-intensity` | Follow camera intensity (0-1) | `0.5` |
+| `--max-zoom` | Maximum zoom level | `1.8` |
+| `--skip-voice` | Generate video without voiceover | `false` |
+| `--skip-analysis` | Skip AI analysis (faster) | `false` |
+| `--reliable` | Use robust V2 engine | `false` |
+| `--dry-run` | Preview script without recording | `false` |
+
+### Cursor & Click Effects
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--cursor` | Cursor style (default, pointer, dot, circle, none) | `default` |
+| `--cursor-size` | Cursor size in pixels | `24` |
+| `--cursor-color` | Cursor color (hex) | `#000000` |
+| `--click-effect` | Click effect (ripple, pulse, ring, spotlight, none) | `ripple` |
+| `--click-color` | Click effect color (hex) | `#3B82F6` |
 
 ## Examples
 
 ```bash
-# Quick demo with defaults
-repovideo demo https://myapp.com
+# Quick demo - just works
+look quick https://stripe.com
 
-# Dry run to preview script
-repovideo demo https://myapp.com --dry-run
+# Twitter-ready short video
+look demo https://myapp.com -d 15 -p twitter
 
-# Custom voice and style
-repovideo demo https://myapp.com -v alloy -s energetic
+# Energetic style for launch
+look demo https://myapp.com -s energetic -v alloy
 
-# Twitter-optimized short video
-repovideo demo https://myapp.com -d 15 -p twitter
+# Silent demo (no voiceover)
+look demo https://myapp.com --skip-voice
 
-# No voiceover (visuals only)
-repovideo demo https://myapp.com --skip-voice
+# Maximum zoom follow-cam
+look demo https://myapp.com --zoom-mode follow --zoom-intensity 0.8
+
+# Subtle, professional look
+look demo https://myapp.com --zoom-mode basic --max-zoom 1.3
 ```
 
-## Environment Variables
+## How It Works
 
+```
+URL → Screenshot → GPT-4V Analysis → Script → Record Browser → 
+    → Add Cursor → Apply Zoom → Add Click Effects → 
+    → Color Grade → Generate Voice → Combine → Export
+```
+
+The magic is in the orchestration. LooK handles dozens of steps automatically to produce professional results.
+
+## Troubleshooting
+
+### "FFmpeg not found"
+Install FFmpeg:
+- **Mac:** `brew install ffmpeg`
+- **Linux:** `sudo apt install ffmpeg`
+- **Windows:** Download from ffmpeg.org
+
+### "OpenAI API error"
+Set your API key:
 ```bash
-export OPENAI_API_KEY=sk-proj-...  # Required for AI features
+export OPENAI_API_KEY=sk-your-key-here
 ```
 
-## Roadmap
+### Video looks choppy
+- Ensure you have enough disk space
+- Try reducing duration: `-d 15`
+- Use a faster preset: `--preset twitter`
 
-- [ ] Visible cursor rendering on video
-- [ ] Smart zoom that follows cursor
-- [ ] Click effects (ripple, pulse)
-- [ ] Background music with auto-ducking
-- [ ] Custom cursor styles
-- [ ] Web UI for editing
-- [ ] Mobile app recording (Appium)
+### Cursor not visible
+- Check cursor style: `--cursor default`
+- Increase size: `--cursor-size 32`
 
 ## License
 
 MIT
+
+---
+
+Built with ❤️ by [nichbot](https://github.com/nichbot)
 

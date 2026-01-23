@@ -1,9 +1,19 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI();
+let openai = null;
+
+function getOpenAI() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required. Set it with: export OPENAI_API_KEY=sk-...');
+    }
+    openai = new OpenAI();
+  }
+  return openai;
+}
 
 export async function analyzeScreenshot(screenshotBase64, metadata = {}) {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages: [
       {
