@@ -255,6 +255,38 @@ look serve -p 8080
 | `-p, --port <port>` | Server port | `3847` |
 | `--no-open` | Don't open browser | (opens by default) |
 
+### Web Editor Features
+
+When you run `look serve`, the web editor provides:
+
+- **Visual Recording** - Enter a URL and click Generate Demo or Live Record
+- **Templates** - Pre-configured demo settings for SaaS, E-commerce, Mobile, etc.
+- **Settings Panel** - Configure API keys directly in the browser
+- **Live Preview** - Real-time preview during live recording
+- **Timeline Editor** - Edit markers, zoom, and effects visually
+- **Script Editor** - Edit AI-generated voiceover scripts
+- **Export Options** - Export for YouTube, Twitter, Instagram, TikTok
+
+### First-Time Setup
+
+1. Run `look serve`
+2. Complete the onboarding tour
+3. Click Settings → API Keys
+4. Enter your OpenAI API key
+5. Start creating demos!
+
+### Keyboard Shortcuts
+
+Press `Shift + ?` in the editor to see all shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `Space` | Play/Pause |
+| `Ctrl+S` | Save project |
+| `Ctrl+E` | Export video |
+| `M` | Add marker |
+| `F` | Fullscreen |
+
 ---
 
 ## `look edit [projectId]`

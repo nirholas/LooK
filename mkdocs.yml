@@ -1,0 +1,178 @@
+# MkDocs configuration for LooK documentation
+# https://www.mkdocs.org/
+
+site_name: LooK Documentation
+site_description: AI-powered product demo video generator. One command, professional results.
+site_author: nirholas
+site_url: https://nirholas.github.io/LooK/
+repo_url: https://github.com/nirholas/LooK
+repo_name: nirholas/LooK
+edit_uri: edit/main/docs/
+
+# Copyright
+copyright: Copyright &copy; 2024-2026 LooK Contributors
+
+# Theme configuration
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/video-box
+  favicon: assets/favicon.png
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - content.action.view
+    - toc.follow
+  palette:
+    # Dark mode (default)
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: nirholas
+      repo: LooK
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      base_path: docs
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Configuration: getting-started/configuration.md
+  - User Guide:
+    - guide/index.md
+    - Web Editor: guide/web-editor.md
+    - Live Recording: guide/live-recording.md
+    - Templates: guide/templates.md
+    - Customization: guide/customization.md
+    - Theme Presets: guide/theme-presets.md
+    - Mobile Recording: guide/mobile-setup.md
+  - Reference:
+    - reference/index.md
+    - CLI Reference: reference/cli.md
+    - API Reference: reference/api.md
+    - Keyboard Shortcuts: reference/keyboard-shortcuts.md
+  - Advanced:
+    - advanced/index.md
+    - Intelligent Exploration: advanced/intelligent-exploration.md
+    - AI Enhancements: advanced/ai-enhancements.md
+    - Architecture: advanced/architecture.md
+    - API Integration: advanced/api-integration.md
+  - Help:
+    - help/index.md
+    - FAQ: help/faq.md
+    - Troubleshooting: help/troubleshooting.md
+    - Support: help/support.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+
+# Extra configuration
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nirholas/LooK
+      name: LooK on GitHub
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/look-demo
+      name: LooK on npm
+  generator: false
+  version:
+    provider: mike
+    default: latest
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+
+# Extra CSS/JS
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

@@ -55,11 +55,29 @@ export class SettingsManager {
     this.toggleOpenai?.addEventListener('click', () => this._toggleVisibility(this.openaiInput, this.toggleOpenai));
     this.toggleGroq?.addEventListener('click', () => this._toggleVisibility(this.groqInput, this.toggleGroq));
 
+    // Theme toggle
+    const themeSelect = document.getElementById('theme-select');
+    themeSelect?.addEventListener('change', (e) => this.applyTheme(e.target.value));
+
     // Load settings from localStorage
     this.load();
     
+    // Apply theme on load
+    const savedTheme = localStorage.getItem('look-settings');
+    if (savedTheme) {
+      try {
+        const { theme } = JSON.parse(savedTheme);
+        if (theme) this.applyTheme(theme);
+      } catch {}
+    }
+    
     // Validate API connections on load
     this.validateApiConnections();
+  }
+
+  applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('look-theme', theme);
   }
 
   open() {

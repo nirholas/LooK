@@ -4,7 +4,44 @@ Base URL: `http://localhost:3847` (or your deployed URL)
 
 ## Authentication
 
-Currently, no authentication is required for local development. For production, configure your own auth middleware.
+### Local Development
+
+No authentication is required for local development.
+
+### API Keys
+
+When using AI features, include your API keys in request headers:
+
+```http
+X-OpenAI-Key: sk-your-openai-key
+X-Groq-Key: gsk-your-groq-key
+```
+
+Example:
+```bash
+curl -X POST http://localhost:3847/api/analyze \
+  -H "Content-Type: application/json" \
+  -H "X-OpenAI-Key: sk-your-key" \
+  -d '{"url": "https://example.com"}'
+```
+
+### Web Editor
+
+The web editor stores API keys in browser localStorage and automatically includes them in requests. Configure keys via Settings → API Keys.
+
+### Environment Variables
+
+Alternatively, set API keys as environment variables on the server:
+
+```bash
+export OPENAI_API_KEY=sk-your-key
+export GROQ_API_KEY=gsk-your-key
+look serve
+```
+
+### Production
+
+For production deployments, configure your own auth middleware and secure API key handling.
 
 ## Endpoints
 

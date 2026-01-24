@@ -819,3 +819,76 @@ export {
   generateSmartActions,
   getAvailableProviders
 } from './ai-enhanced.js';
+
+// v2.1 Features - Batch Processing & Timeline Markers
+export { BatchProcessor, loadBatchConfig, runBatch } from './batch.js';
+export {
+  MarkerType,
+  generateYouTubeChapters,
+  generateZoomFromMarkers,
+  MarkerTemplates,
+  applyMarkerTemplate
+} from './markers.js';
+
+// v2.1 Features - Professional Overlays & Effects
+export {
+  AnimatedCaptionRenderer,
+  CaptionStyle,
+  addAnimatedCaptions
+} from './animated-captions.js';
+
+export {
+  SceneTransitionManager,
+  TransitionType,
+  TransitionPresets,
+  applyTransition,
+  chainWithTransitions
+} from './scene-transitions.js';
+
+export {
+  KeyboardVisualizer,
+  KeyStyle,
+  addKeyboardOverlay
+} from './keyboard-visualizer.js';
+
+export {
+  CalloutRenderer,
+  CalloutType,
+  ArrowStyle,
+  addCallouts
+} from './callout-annotations.js';
+
+export {
+  SpotlightRenderer,
+  SpotlightShape,
+  addSpotlight
+} from './spotlight.js';
+
+export {
+  ThumbnailGenerator,
+  ThumbnailStyle,
+  generateThumbnail,
+  generateYouTubeThumbnail,
+  generateSocialThumbnails
+} from './auto-thumbnail.js';
+
+export {
+  GifExporter,
+  GifQuality,
+  DitherMode,
+  videoToGif,
+  exportHighQualityGif,
+  exportPreviewGif,
+  exportClipAsGif,
+  exportMultipleSizes
+} from './gif-export.js';
+
+export {
+  LowerThirdRenderer,
+  LowerThirdStyle,
+  LowerThirdTheme,
+  addLowerThirds,
+  createSpeakerIntro,
+  createChapterMarker,
+  createSocialCTA
+} from './lower-thirds.js';

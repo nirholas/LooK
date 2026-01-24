@@ -75,11 +75,39 @@
             <h3>Recent Projects</h3>
             <ul id="projects-list" class="projects-list"></ul>
           </div>
+
+          <!-- Dashboard Stats -->
+          <div id="dashboard-stats" class="dashboard-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="stat-projects">-</span>
+              <span class="stat-label">Projects</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-recordings">-</span>
+              <span class="stat-label">Recordings</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-exports">-</span>
+              <span class="stat-label">Exports</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-uptime">-</span>
+              <span class="stat-label">Server Uptime</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- Editor screen (hidden initially) -->
       <section id="editor-screen" class="editor-screen hidden">
+        <div class="editor-toolbar">
+          <button id="back-btn" class="btn btn-secondary btn-icon" title="Back to start">
+            <span class="icon">←</span> Back
+          </button>
+          <div class="toolbar-center">
+            <span id="autosave-indicator" class="autosave-indicator hidden">💾 Saving...</span>
+          </div>
+        </div>
         <div class="editor-layout">
           <!-- Live preview panel (shown during live recording) -->
           <div id="live-preview-panel" class="live-preview-panel hidden">
@@ -92,9 +120,17 @@
               <video id="preview-video" class="preview-video"></video>
               <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
               <div id="video-controls" class="video-controls">
-                <button id="play-btn" class="control-btn">▶️</button>
+                <button id="play-btn" class="control-btn" title="Play/Pause">▶️</button>
                 <span id="time-display" class="time-display">0:00 / 0:00</span>
                 <input type="range" id="seek-bar" class="seek-bar" min="0" max="100" value="0">
+                <select id="playback-speed" class="playback-speed" title="Playback Speed">
+                  <option value="0.5">0.5x</option>
+                  <option value="1" selected>1x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+                <button id="volume-btn" class="control-btn" title="Toggle Mute">🔊</button>
+                <button id="fullscreen-btn" class="control-btn" title="Fullscreen">⛶</button>
               </div>
             </div>
 
@@ -135,6 +171,9 @@
                   class="script-editor" 
                   placeholder="AI-generated script will appear here..."
                 ></textarea>
+                <div class="script-meta">
+                  <span id="script-word-count" class="word-count">0 words</span>
+                </div>
                 <div class="script-actions">
                   <select id="voice-select" class="voice-select">
                     <option value="nova">Nova (warm)</option>
@@ -263,6 +302,186 @@
                   </select>
                 </div>
               </div>
+
+              <!-- Advanced Settings (collapsible) -->
+              <details class="settings-group settings-advanced">
+                <summary><h4>Advanced</h4></summary>
+                
+                <div class="setting-row">
+                  <label for="video-resolution">Resolution</label>
+                  <select id="video-resolution">
+                    <option value="1920x1080">1080p (1920×1080)</option>
+                    <option value="2560x1440">1440p (2560×1440)</option>
+                    <option value="3840x2160">4K (3840×2160)</option>
+                    <option value="1280x720">720p (1280×720)</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="frame-rate">Frame Rate</label>
+                  <select id="frame-rate">
+                    <option value="30">30 FPS</option>
+                    <option value="60" selected>60 FPS</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="demo-duration">Duration (seconds)</label>
+                  <input type="number" id="demo-duration" min="10" max="300" value="25" class="form-input form-input-sm">
+                </div>
+              </details>
+
+              <!-- Intro/Outro Settings -->
+              <details class="settings-group settings-intro-outro">
+                <summary><h4>Intro & Outro</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-intro">
+                    <span>Enable Intro</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="intro-options">
+                  <label for="intro-title">Title</label>
+                  <input type="text" id="intro-title" class="form-input" placeholder="Your Product Name">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="intro-theme">Theme</label>
+                  <select id="intro-theme">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="gradient">Gradient</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-outro">
+                    <span>Enable Outro CTA</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="outro-options">
+                  <label for="outro-cta">CTA Text</label>
+                  <input type="text" id="outro-cta" class="form-input" placeholder="Try it free today!">
+                </div>
+              </details>
+
+              <!-- Branding Settings -->
+              <details class="settings-group settings-branding">
+                <summary><h4>Branding</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-watermark">
+                    <span>Enable Watermark</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="watermark-options">
+                  <label for="watermark-text">Watermark Text</label>
+                  <input type="text" id="watermark-text" class="form-input" placeholder="yourcompany.com">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="watermark-position">Position</label>
+                  <select id="watermark-position">
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="watermark-opacity">Opacity</label>
+                  <input type="range" id="watermark-opacity" min="10" max="100" value="50">
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-progress-bar">
+                    <span>Show Progress Bar</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="progress-bar-style">Progress Style</label>
+                  <select id="progress-bar-style">
+                    <option value="bar">Bar</option>
+                    <option value="line">Thin Line</option>
+                    <option value="dots">Dots</option>
+                    <option value="circular">Circular</option>
+                  </select>
+                </div>
+              </details>
+
+              <!-- Device Frame Settings -->
+              <details class="settings-group settings-device-frame">
+                <summary><h4>Device Frame</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-device-frame">
+                    <span>Enable Device Frame</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="device-frame-options">
+                  <label for="device-type">Device</label>
+                  <select id="device-type">
+                    <option value="none">None</option>
+                    <option value="iphone-15-pro">iPhone 15 Pro</option>
+                    <option value="iphone-15">iPhone 15</option>
+                    <option value="iphone-14-pro">iPhone 14 Pro</option>
+                    <option value="pixel-8">Google Pixel 8</option>
+                    <option value="pixel-8-pro">Google Pixel 8 Pro</option>
+                    <option value="macbook-pro">MacBook Pro</option>
+                    <option value="ipad-pro">iPad Pro</option>
+                    <option value="browser">Browser Window</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="device-shadow" checked>
+                    <span>Show Shadow</span>
+                  </label>
+                </div>
+              </details>
+
+              <!-- Subtitles Settings -->
+              <details class="settings-group settings-subtitles">
+                <summary><h4>Subtitles</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-subtitles">
+                    <span>Burn-in Subtitles</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="subtitle-style">Style</label>
+                  <select id="subtitle-style">
+                    <option value="standard">Standard</option>
+                    <option value="karaoke">Karaoke (animated)</option>
+                    <option value="pop">Pop (word by word)</option>
+                    <option value="typewriter">Typewriter</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="subtitle-position">Position</label>
+                  <select id="subtitle-position">
+                    <option value="bottom">Bottom</option>
+                    <option value="top">Top</option>
+                  </select>
+                </div>
+              </details>
             </div>
           </aside>
         </div>
@@ -620,7 +839,7 @@
               <label>Theme</label>
               <select class="form-select" id="theme-select">
                 <option value="dark">Dark</option>
-                <option value="light">Light (Coming Soon)</option>
+                <option value="light">Light</option>
               </select>
             </div>
             

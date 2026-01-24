@@ -100,6 +100,36 @@ class LookEditor {
       clickColor: document.getElementById('click-color'),
       exportPreset: document.getElementById('export-preset'),
       
+      // Advanced Settings
+      videoResolution: document.getElementById('video-resolution'),
+      frameRate: document.getElementById('frame-rate'),
+      demoDuration: document.getElementById('demo-duration'),
+      
+      // Intro/Outro
+      enableIntro: document.getElementById('enable-intro'),
+      introTitle: document.getElementById('intro-title'),
+      introTheme: document.getElementById('intro-theme'),
+      enableOutro: document.getElementById('enable-outro'),
+      outroCta: document.getElementById('outro-cta'),
+      
+      // Branding
+      enableWatermark: document.getElementById('enable-watermark'),
+      watermarkText: document.getElementById('watermark-text'),
+      watermarkPosition: document.getElementById('watermark-position'),
+      watermarkOpacity: document.getElementById('watermark-opacity'),
+      enableProgressBar: document.getElementById('enable-progress-bar'),
+      progressBarStyle: document.getElementById('progress-bar-style'),
+      
+      // Device Frame
+      enableDeviceFrame: document.getElementById('enable-device-frame'),
+      deviceType: document.getElementById('device-type'),
+      deviceShadow: document.getElementById('device-shadow'),
+      
+      // Subtitles
+      enableSubtitles: document.getElementById('enable-subtitles'),
+      subtitleStyle: document.getElementById('subtitle-style'),
+      subtitlePosition: document.getElementById('subtitle-position'),
+      
       // Tabs
       tabBtns: document.querySelectorAll('.tab-btn'),
       scriptTab: document.getElementById('script-tab'),
@@ -277,11 +307,24 @@ class LookEditor {
       this.autoSave?.markDirty();
     });
     
-    // Settings changes
+    // Settings changes - all form controls that affect project settings
     const settingsInputs = [
+      // Basic settings
       'zoomMode', 'zoomIntensity', 'zoomSpeed',
       'cursorStyle', 'cursorSize', 'cursorColor',
-      'clickEffect', 'clickColor', 'exportPreset'
+      'clickEffect', 'clickColor', 'exportPreset',
+      // Advanced settings
+      'videoResolution', 'frameRate', 'demoDuration',
+      // Intro/Outro
+      'enableIntro', 'introTitle', 'introTheme',
+      'enableOutro', 'outroCta',
+      // Branding
+      'enableWatermark', 'watermarkText', 'watermarkPosition', 'watermarkOpacity',
+      'enableProgressBar', 'progressBarStyle',
+      // Device Frame
+      'enableDeviceFrame', 'deviceType', 'deviceShadow',
+      // Subtitles
+      'enableSubtitles', 'subtitleStyle', 'subtitlePosition'
     ];
     
     settingsInputs.forEach(id => {
@@ -291,6 +334,12 @@ class LookEditor {
           this.onSettingsChange();
           this.autoSave?.markDirty();
         });
+        // Also listen for input on text fields
+        if (el.type === 'text' || el.type === 'number') {
+          el.addEventListener('input', () => {
+            this.autoSave?.markDirty();
+          });
+        }
       }
     });
     
@@ -336,6 +385,23 @@ class LookEditor {
     // Copy YouTube chapters button
     this.elements.copyChaptersBtn = document.getElementById('copy-chapters-btn');
     this.elements.copyChaptersBtn?.addEventListener('click', () => this.copyYouTubeChapters());
+    
+    // Collapsible advanced settings sections
+    document.querySelectorAll('.settings-section.collapsible .section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const section = header.closest('.settings-section');
+        section.classList.toggle('collapsed');
+        const content = section.querySelector('.section-content');
+        const toggle = section.querySelector('.toggle-icon');
+        if (section.classList.contains('collapsed')) {
+          content.style.maxHeight = '0';
+          if (toggle) toggle.textContent = '▶';
+        } else {
+          content.style.maxHeight = content.scrollHeight + 'px';
+          if (toggle) toggle.textContent = '▼';
+        }
+      });
+    });
   }
 
   setupAccessibility() {
@@ -942,6 +1008,38 @@ look serve              # Start the web UI</code></pre>
     try {
       const { projects } = await API.getProjects();
       this.renderProjectsList(projects);
+      
+      // Also load dashboard stats
+      this.loadDashboardStats();
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    }
+  }
+  
+  async loadDashboardStats() {
+    try {
+      const stats = await API.getStats();
+      
+      const projectsEl = document.getElementById('stat-projects');
+      const recordingsEl = document.getElementById('stat-recordings');
+      const exportsEl = document.getElementById('stat-exports');
+      const uptimeEl = document.getElementById('stat-uptime');
+      
+      if (projectsEl) projectsEl.textContent = stats.projectsCreated || 0;
+      if (recordingsEl) recordingsEl.textContent = stats.recordingsStarted || 0;
+      if (exportsEl) exportsEl.textContent = stats.exportsCompleted || 0;
+      if (uptimeEl) uptimeEl.textContent = this.formatUptime(stats.uptime || 0);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  }
+  
+  formatUptime(seconds) {
+    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+    return `${Math.floor(seconds / 86400)}d`;
+  }
     } catch (error) {
       console.error('Failed to load projects:', error);
     }
@@ -954,6 +1052,12 @@ look serve              # Start the web UI</code></pre>
       ? '<li class="empty">No recent projects. Enter a URL above to get started!</li>'
       : projects.slice(0, 5).map(p => `
           <li data-id="${p.id}" class="project-item">
+            <div class="project-thumbnail">
+              ${p.thumbnail 
+                ? `<img src="${p.thumbnail}" alt="Project thumbnail" loading="lazy">`
+                : `<div class="thumbnail-placeholder">📹</div>`
+              }
+            </div>
             <div class="project-info">
               <span class="project-name">${this.escapeHtml(p.name || p.url)}</span>
               <span class="project-url">${this.escapeHtml(p.url)}</span>
@@ -1315,49 +1419,152 @@ look serve              # Start the web UI</code></pre>
   loadSettings(settings) {
     if (!settings) return;
     
+    // Video resolution
+    if (settings.width && settings.height) {
+      const resolution = `${settings.width}x${settings.height}`;
+      if (this.elements.videoResolution) this.elements.videoResolution.value = resolution;
+    }
+    if (this.elements.frameRate && settings.fps) this.elements.frameRate.value = settings.fps;
+    if (this.elements.demoDuration && settings.duration) this.elements.demoDuration.value = settings.duration;
+    
     // Zoom
     if (settings.zoom) {
-      this.elements.zoomMode.value = settings.zoom.mode || 'smart';
-      this.elements.zoomIntensity.value = (settings.zoom.intensity || 0.5) * 100;
-      this.elements.zoomSpeed.value = settings.zoom.speed || 'medium';
+      if (this.elements.zoomMode) this.elements.zoomMode.value = settings.zoom.mode || 'smart';
+      if (this.elements.zoomIntensity) this.elements.zoomIntensity.value = (settings.zoom.intensity || 0.5) * 100;
+      if (this.elements.zoomSpeed) this.elements.zoomSpeed.value = settings.zoom.speed || 'medium';
     }
     
     // Cursor
     if (settings.cursor) {
-      this.elements.cursorStyle.value = settings.cursor.style || 'default';
-      this.elements.cursorSize.value = settings.cursor.size || 24;
-      this.elements.cursorColor.value = settings.cursor.color || '#000000';
+      if (this.elements.cursorStyle) this.elements.cursorStyle.value = settings.cursor.style || 'default';
+      if (this.elements.cursorSize) this.elements.cursorSize.value = settings.cursor.size || 24;
+      if (this.elements.cursorColor) this.elements.cursorColor.value = settings.cursor.color || '#000000';
     }
     
     // Click effect
     if (settings.clickEffect) {
-      this.elements.clickEffect.value = settings.clickEffect.type || 'ripple';
-      this.elements.clickColor.value = settings.clickEffect.color || '#3B82F6';
+      if (this.elements.clickEffect) this.elements.clickEffect.value = settings.clickEffect.type || 'ripple';
+      if (this.elements.clickColor) this.elements.clickColor.value = settings.clickEffect.color || '#3B82F6';
+    }
+    
+    // Intro/Outro
+    if (settings.intro) {
+      if (this.elements.enableIntro) this.elements.enableIntro.checked = settings.intro.enabled || false;
+      if (this.elements.introTitle) this.elements.introTitle.value = settings.intro.title || '';
+      if (this.elements.introTheme) this.elements.introTheme.value = settings.intro.theme || 'dark';
+    }
+    if (settings.outro) {
+      if (this.elements.enableOutro) this.elements.enableOutro.checked = settings.outro.enabled || false;
+      if (this.elements.outroCta) this.elements.outroCta.value = settings.outro.cta || '';
+    }
+    
+    // Branding
+    if (settings.watermark) {
+      if (this.elements.enableWatermark) this.elements.enableWatermark.checked = settings.watermark.enabled || false;
+      if (this.elements.watermarkText) this.elements.watermarkText.value = settings.watermark.text || '';
+      if (this.elements.watermarkPosition) this.elements.watermarkPosition.value = settings.watermark.position || 'bottom-right';
+      if (this.elements.watermarkOpacity) this.elements.watermarkOpacity.value = (settings.watermark.opacity || 0.5) * 100;
+    }
+    if (settings.progressBar) {
+      if (this.elements.enableProgressBar) this.elements.enableProgressBar.checked = settings.progressBar.enabled || false;
+      if (this.elements.progressBarStyle) this.elements.progressBarStyle.value = settings.progressBar.style || 'bar';
+    }
+    
+    // Device Frame
+    if (settings.deviceFrame) {
+      if (this.elements.enableDeviceFrame) this.elements.enableDeviceFrame.checked = settings.deviceFrame.enabled || false;
+      if (this.elements.deviceType) this.elements.deviceType.value = settings.deviceFrame.device || 'none';
+      if (this.elements.deviceShadow) this.elements.deviceShadow.checked = settings.deviceFrame.shadow !== false;
+    }
+    
+    // Subtitles
+    if (settings.subtitles) {
+      if (this.elements.enableSubtitles) this.elements.enableSubtitles.checked = settings.subtitles.enabled || false;
+      if (this.elements.subtitleStyle) this.elements.subtitleStyle.value = settings.subtitles.style || 'standard';
+      if (this.elements.subtitlePosition) this.elements.subtitlePosition.value = settings.subtitles.position || 'bottom';
     }
     
     // Export
-    this.elements.exportPreset.value = settings.preset || 'youtube';
-    this.elements.voiceSelect.value = settings.voice || 'nova';
+    if (this.elements.exportPreset) this.elements.exportPreset.value = settings.preset || 'youtube';
+    if (this.elements.voiceSelect) this.elements.voiceSelect.value = settings.voice || 'nova';
   }
   
   getSettings() {
+    // Parse resolution
+    const resolutionParts = (this.elements.videoResolution?.value || '1920x1080').split('x');
+    const width = parseInt(resolutionParts[0]) || 1920;
+    const height = parseInt(resolutionParts[1]) || 1080;
+    
     return {
+      // Video settings
+      width,
+      height,
+      fps: parseInt(this.elements.frameRate?.value) || 60,
+      duration: parseInt(this.elements.demoDuration?.value) || 25,
+      
+      // Zoom
       zoom: {
-        mode: this.elements.zoomMode.value,
-        intensity: parseInt(this.elements.zoomIntensity.value) / 100,
-        speed: this.elements.zoomSpeed.value
+        mode: this.elements.zoomMode?.value || 'smart',
+        intensity: parseInt(this.elements.zoomIntensity?.value || 50) / 100,
+        speed: this.elements.zoomSpeed?.value || 'medium'
       },
+      
+      // Cursor
       cursor: {
-        style: this.elements.cursorStyle.value,
-        size: parseInt(this.elements.cursorSize.value),
-        color: this.elements.cursorColor.value
+        style: this.elements.cursorStyle?.value || 'default',
+        size: parseInt(this.elements.cursorSize?.value) || 24,
+        color: this.elements.cursorColor?.value || '#000000'
       },
+      
+      // Click effects
       clickEffect: {
-        type: this.elements.clickEffect.value,
-        color: this.elements.clickColor.value
+        type: this.elements.clickEffect?.value || 'ripple',
+        color: this.elements.clickColor?.value || '#3B82F6'
       },
-      preset: this.elements.exportPreset.value,
-      voice: this.elements.voiceSelect.value
+      
+      // Intro/Outro
+      intro: {
+        enabled: this.elements.enableIntro?.checked || false,
+        title: this.elements.introTitle?.value || '',
+        theme: this.elements.introTheme?.value || 'dark'
+      },
+      outro: {
+        enabled: this.elements.enableOutro?.checked || false,
+        cta: this.elements.outroCta?.value || ''
+      },
+      
+      // Branding
+      watermark: {
+        enabled: this.elements.enableWatermark?.checked || false,
+        text: this.elements.watermarkText?.value || '',
+        position: this.elements.watermarkPosition?.value || 'bottom-right',
+        opacity: parseInt(this.elements.watermarkOpacity?.value || 50) / 100
+      },
+      progressBar: {
+        enabled: this.elements.enableProgressBar?.checked || false,
+        style: this.elements.progressBarStyle?.value || 'bar'
+      },
+      
+      // Device Frame
+      deviceFrame: {
+        enabled: this.elements.enableDeviceFrame?.checked || false,
+        device: this.elements.deviceType?.value || 'none',
+        shadow: this.elements.deviceShadow?.checked !== false
+      },
+      
+      // Subtitles
+      subtitles: {
+        enabled: this.elements.enableSubtitles?.checked || false,
+        style: this.elements.subtitleStyle?.value || 'standard',
+        position: this.elements.subtitlePosition?.value || 'bottom'
+      },
+      
+      // Export
+      preset: this.elements.exportPreset?.value || 'youtube',
+      voice: this.elements.voiceSelect?.value || 'nova',
+      
+      // Template
+      template: this.currentTemplate?.name || null
     };
   }
   

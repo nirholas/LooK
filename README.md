@@ -27,10 +27,12 @@ That's it. You get a professional demo video in minutes.
 | [Getting Started](./docs/GETTING_STARTED.md) | Installation and first demo |
 | [CLI Reference](./docs/CLI_REFERENCE.md) | Complete command reference |
 | [Web Editor](./docs/WEB_EDITOR.md) | Visual editing interface |
+| [Live Recording](./docs/LIVE_RECORDING.md) | Real-time recording with preview |
 | [Mobile Setup](./docs/MOBILE_SETUP.md) | Android/iOS app recording |
 | [API Documentation](./docs/API.md) | Programmatic usage |
 | [Customization](./docs/CUSTOMIZATION.md) | Cursors, effects, zoom modes |
 | [Theme Presets](./docs/THEME_PRESETS.md) | Pre-built theme configurations |
+| [FAQ](./docs/FAQ.md) | Frequently asked questions |
 | [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
 **Project:**

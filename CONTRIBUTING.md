@@ -76,9 +76,40 @@ node bin/repovideo.js quick https://example.com --dry-run
 ### Start Web UI Development
 
 ```bash
-# Install UI dependencies and start dev server
-npm run dev:ui
+# Start the UI dev server
+cd ui && npm run dev
 ```
+
+The UI dev server runs on `http://localhost:3000` with hot module reload.
+
+### UI Project Structure
+
+```
+ui/
+├── index.html           # Main HTML entry
+├── src/
+│   ├── app.js          # Main application class
+│   ├── api.js          # Backend API client
+│   ├── toast.js        # Toast notifications
+│   ├── keyboard.js     # Keyboard shortcuts
+│   ├── timeline.js     # Timeline component
+│   ├── autosave.js     # Auto-save functionality
+│   ├── live-preview.js # Live recording preview
+│   ├── onboarding.js   # First-run onboarding tour
+│   ├── settings.js     # Settings modal manager
+│   ├── preview-renderer.js  # Canvas preview
+│   └── styles.css      # All styles
+├── package.json
+└── vite.config.js
+```
+
+### UI Development Guidelines
+
+- **No frameworks** - The UI uses vanilla JavaScript (ES6 modules)
+- **CSS custom properties** - Use variables in `:root` for theming
+- **Accessibility** - Add ARIA labels, keyboard navigation, focus management
+- **Glass morphism** - Use `var(--glass-bg)` for frosted glass effects
+- **Responsive** - Test on different screen sizes
 
 ### Environment Variables
 

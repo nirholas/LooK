@@ -20,25 +20,31 @@ Released with:
 ## v2.1 - Timeline & Batch (Q2 2026)
 
 ### Timeline Markers
-- [ ] Add marker system for important moments
-- [ ] Visual marker track in web editor
-- [ ] Export chapter markers for YouTube
-- [ ] Marker-based automatic zoom triggering
-- [ ] Marker templates for common patterns
+- [x] Add marker system for important moments
+- [x] Visual marker track in web editor
+- [x] Export chapter markers for YouTube
+- [x] Marker-based automatic zoom triggering
+- [x] Marker templates for common patterns
 
 ### Batch Processing
-- [ ] Native batch processing command (`look batch`)
-- [ ] YAML/JSON configuration for batch jobs
-- [ ] Parallel processing with configurable concurrency
+- [x] Native batch processing command (`look batch`)
+- [x] YAML/JSON configuration for batch jobs
+- [x] Parallel processing with configurable concurrency
 - [ ] Progress dashboard for batch operations
-- [ ] Resume failed batch jobs
-- [ ] Batch export reports
+- [x] Resume failed batch jobs
+- [x] Batch export reports
 
 ### Improvements
 - [ ] Faster rendering with GPU acceleration
 - [ ] Reduced memory footprint for long recordings
-- [ ] Better error recovery and retry logic
-- [ ] Improved Playwright stability
+- [x] Better error recovery and retry logic
+- [x] Improved Playwright stability
+
+### Developer Experience (NEW)
+- [x] OpenAPI/Swagger documentation at `/api/docs`
+- [x] Structured JSON logging
+- [x] Custom error classes with error codes
+- [x] HTTP request logging middleware
 
 ---
 
