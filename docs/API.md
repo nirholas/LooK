@@ -1,3 +1,157 @@
+# LooK API Reference
+
+Base URL: `http://localhost:3847` (or your deployed URL)
+
+## Authentication
+
+Currently, no authentication is required for local development. For production, configure your own auth middleware.
+
+## Endpoints
+
+### Health Check
+
+```http
+GET /api/health
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "version": "2.0.0",
+  "openai": true,
+  "groq": false,
+  "playwright": true
+}
+```
+
+### Projects
+
+#### List Projects
+```http
+GET /api/projects
+```
+
+#### Get Project
+```http
+GET /api/project/:id
+```
+
+#### Delete Project
+```http
+DELETE /api/project/:id
+```
+
+### Analysis & Recording
+
+#### Analyze URL
+```http
+POST /api/analyze
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "duration": 25,
+  "style": "professional"
+}
+```
+
+#### Start Recording
+```http
+POST /api/record
+Content-Type: application/json
+
+{
+  "projectId": "uuid",
+  "options": {
+    "width": 1920,
+    "height": 1080
+  }
+}
+```
+
+### Import
+
+#### Import Project
+```http
+POST /api/import
+Content-Type: application/json
+
+{
+  "url": "https://github.com/user/repo",
+  "type": "auto",
+  "options": {
+    "shallow": true,
+    "analyzeReadme": true
+  }
+}
+```
+
+#### Get Import Status
+```http
+GET /api/import/:projectId/status
+```
+
+### Live Recording
+
+#### Start Live Session
+```http
+POST /api/live/start
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "options": {
+    "width": 1920,
+    "height": 1080,
+    "previewFps": 15
+  }
+}
+```
+
+#### Control Live Session
+```http
+POST /api/live/:sessionId/pause
+POST /api/live/:sessionId/resume
+POST /api/live/:sessionId/stop
+```
+
+### Rendering
+
+#### Render Final Video
+```http
+POST /api/render
+Content-Type: application/json
+
+{
+  "projectId": "uuid",
+  "preset": "youtube"
+}
+```
+
+#### Download Video
+```http
+GET /api/download/:projectId
+```
+
+## WebSocket Events
+
+Connect to `ws://localhost:3847` for real-time updates.
+
+### Client → Server
+
+```json
+{ "action": "subscribe", "payload": { "projectId": "uuid" } }
+{ "action": "subscribe-live", "payload": { "sessionId": "live-xxx" } }
+```
+
+### Server → Client
+
+```json
+{ "type": "status", "data": { "stage": "recording", "progress": 50 } }
+{ "type": "live-frame", "data": "base64-image-data" }
+{ "type": "error", "data": { "message": "Error description" } }
+```
 # API Documentation
 
 LooK can be used programmatically in your Node.js applications.

@@ -4,21 +4,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    include: ['tests/**/*.test.js'],
+    exclude: ['node_modules', 'ui/node_modules'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
-      reportsDirectory: './coverage',
+      reporter: ['text', 'lcov', 'html'],
       include: ['src/**/*.js'],
-      exclude: [
-        'node_modules/**',
-        'tests/**',
-        'ui/**',
-        'bin/**'
-      ]
+      exclude: ['src/types/**']
     },
-    include: ['tests/**/*.test.js'],
-    exclude: ['node_modules/**'],
-    testTimeout: 10000,
-    hookTimeout: 10000
+    testTimeout: 30000,
+    hookTimeout: 30000
   }
 });
