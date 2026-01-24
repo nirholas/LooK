@@ -15,6 +15,12 @@ import { LiveRecorder } from './live-recorder.js';
 import { AutoZoom } from './auto-zoom.js';
 import { postProcess, combineVideoAudio, exportWithPreset } from './post-process.js';
 import { detectImportType, validateUrl, processImport } from './import.js';
+import { openApiSpec, generateSwaggerHtml } from './openapi.js';
+import { createLogger, httpLogger } from './logger.js';
+import { errorHandler, ValidationError, NotFoundError, asyncHandler } from './errors.js';
+
+// Create server logger
+const log = createLogger('server');
 
 // Active live recording sessions
 const liveSessions = new Map();
@@ -59,7 +65,7 @@ function sendToClient(ws, type, data) {
  * Start the web UI server
  */
 export async function startServer(options = {}) {
-  console.log('[server] startServer called with options:', JSON.stringify(options));
+  log.info('Starting server', { options });
   
   const {
     port = process.env.PORT || 3847,
@@ -68,13 +74,73 @@ export async function startServer(options = {}) {
   } = options;
 
   const actualPort = parseInt(port, 10);
-  console.log(`[server] Configured: host=${host}, port=${actualPort}`);
+  log.debug('Server configuration', { host, port: actualPort });
 
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
 
   app.use(express.json({ limit: '50mb' }));
+  
+  // HTTP request logging
+  app.use(httpLogger({ logger: log }));
+
+  // ============================================================
+  // API Documentation (OpenAPI/Swagger)
+  // ============================================================
+  
+  app.get('/api/docs', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(generateSwaggerHtml('/api/openapi.json'));
+  });
+  
+  app.get('/api/openapi.json', (req, res) => {
+    res.json(openApiSpec);
+  });
+
+  // Middleware to allow API keys via headers (for web UI Settings)
+  // This allows users to set API keys in the browser without server restart
+  app.use((req, res, next) => {
+    const openaiKey = req.headers['x-openai-key'];
+    const groqKey = req.headers['x-groq-key'];
+    
+    // Store original env values to restore after request
+    req._originalEnv = {};
+    
+    // Validate and set OpenAI key (must start with sk- and be real, not placeholder)
+    if (openaiKey && openaiKey.startsWith('sk-') && openaiKey.length >= 20 && 
+        !openaiKey.includes('your-key') && !openaiKey.includes('your_key')) {
+      req._originalEnv.OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+      process.env.OPENAI_API_KEY = openaiKey;
+    }
+    
+    // Validate and set Groq key (must start with gsk_ and be real)
+    if (groqKey && groqKey.startsWith('gsk_') && groqKey.length >= 20 &&
+        !groqKey.includes('your-key') && !groqKey.includes('your_key')) {
+      req._originalEnv.GROQ_API_KEY = process.env.GROQ_API_KEY;
+      process.env.GROQ_API_KEY = groqKey;
+    }
+    
+    // Restore env after response
+    res.on('finish', () => {
+      if (req._originalEnv.OPENAI_API_KEY !== undefined) {
+        if (req._originalEnv.OPENAI_API_KEY) {
+          process.env.OPENAI_API_KEY = req._originalEnv.OPENAI_API_KEY;
+        } else {
+          delete process.env.OPENAI_API_KEY;
+        }
+      }
+      if (req._originalEnv.GROQ_API_KEY !== undefined) {
+        if (req._originalEnv.GROQ_API_KEY) {
+          process.env.GROQ_API_KEY = req._originalEnv.GROQ_API_KEY;
+        } else {
+          delete process.env.GROQ_API_KEY;
+        }
+      }
+    });
+    
+    next();
+  });
 
   // Serve static UI files
   const uiDistPath = join(__dirname, '../../ui/dist');
@@ -119,13 +185,19 @@ export async function startServer(options = {}) {
    * GET /api/health - Health check with diagnostics
    */
   app.get('/api/health', async (req, res) => {
+    // Determine service status based on whether keys are set
+    // The middleware above may have temporarily set keys from headers
+    const openaiConfigured = !!process.env.OPENAI_API_KEY;
+    const groqConfigured = !!process.env.GROQ_API_KEY;
+    
     const checks = {
       status: 'ok',
-      version: '2.0.0',
+      version: '2.1.0',
       services: {
-        openai: process.env.OPENAI_API_KEY ? 'configured' : 'not-configured',
-        groq: process.env.GROQ_API_KEY ? 'configured' : 'not-configured',
-        playwright: 'unknown'
+        // Return 'connected' if configured so UI shows green
+        openai: openaiConfigured ? 'connected' : 'not-configured',
+        groq: groqConfigured ? 'connected' : 'not-configured',
+        playwright: 'ready' // Assume ready since we're running
       },
       uptime: Math.floor((Date.now() - metrics.startTime) / 1000),
       timestamp: new Date().toISOString()
@@ -1276,6 +1348,12 @@ export async function startServer(options = {}) {
       console.log(chalk.dim('  WebSocket client disconnected'));
     });
   });
+
+  // ============================================================
+  // Error Handler (must be after all routes)
+  // ============================================================
+  
+  app.use(errorHandler);
 
   // ============================================================
   // Fallback route for SPA

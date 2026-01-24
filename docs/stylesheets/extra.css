@@ -1,0 +1,175 @@
+/* LooK Documentation - Custom Styles */
+
+/* Hero section enhancements */
+.md-typeset h1 {
+  font-weight: 700;
+}
+
+/* Feature cards grid */
+.grid.cards {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.grid.cards > ul > li {
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grid.cards > ul > li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Code block enhancements */
+.md-typeset pre > code {
+  border-radius: 8px;
+}
+
+/* Admonition customization */
+.md-typeset .admonition {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Tab styling */
+.md-typeset .tabbed-labels > label {
+  font-weight: 500;
+}
+
+/* Keyboard shortcuts styling */
+.md-typeset kbd {
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 4px;
+  box-shadow: 0 2px 0 var(--md-default-fg-color--lighter);
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+}
+
+/* Mermaid diagram styling */
+.md-typeset .mermaid {
+  margin: 1.5em 0;
+}
+
+/* Table enhancements */
+.md-typeset table:not([class]) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+
+/* Button styling for call-to-action links */
+.md-typeset .md-button {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 0.6em 1.2em;
+  transition: all 0.2s ease;
+}
+
+.md-typeset .md-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.md-typeset .md-button--primary {
+  background: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+
+/* Navigation improvements */
+.md-nav__link {
+  font-weight: 450;
+}
+
+/* Search result highlighting */
+.md-search-result mark {
+  background: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  padding: 0 0.1em;
+  border-radius: 2px;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 76.1875em) {
+  .md-typeset h1 {
+    font-size: 1.8em;
+  }
+  
+  .grid.cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Custom scrollbar (WebKit browsers) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-default-bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-default-fg-color--lighter);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-default-fg-color--light);
+}
+
+/* Footer styling */
+.md-footer-meta {
+  background: var(--md-footer-bg-color);
+}
+
+/* Announcement bar styling */
+.md-banner {
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+
+/* Status badges in navigation */
+.md-nav__link .status {
+  font-size: 0.7em;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
+
+.md-nav__link .status.new {
+  background: #4caf50;
+  color: white;
+}
+
+.md-nav__link .status.beta {
+  background: #ff9800;
+  color: white;
+}
+
+.md-nav__link .status.deprecated {
+  background: #f44336;
+  color: white;
+}
+
+/* Print styles */
+@media print {
+  .md-sidebar,
+  .md-header,
+  .md-footer,
+  .md-tabs {
+    display: none !important;
+  }
+  
+  .md-content {
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+}

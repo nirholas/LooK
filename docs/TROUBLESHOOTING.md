@@ -558,6 +558,119 @@ look demo https://site.com -o /path/with/space/demo.mp4
 
 ---
 
+## Web Editor Issues
+
+### API Status Shows "Not Configured"
+
+**Cause:** No API keys have been set up.
+
+**Solution:**
+1. Click the ⚙️ Settings button or the API status indicator
+2. Go to the API Keys tab
+3. Enter your OpenAI API key
+4. Click Save Settings
+
+### API Status Shows "Error"
+
+**Possible Causes:**
+1. Invalid API key
+2. Backend server not running
+3. Network connectivity issues
+
+**Solutions:**
+
+Verify your API key is valid:
+```bash
+curl https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY"
+```
+
+Check if the backend is running:
+```bash
+curl http://localhost:3847/api/health
+```
+
+### Settings Not Saving
+
+**Possible Causes:**
+1. Browser localStorage is disabled
+2. Private/incognito browsing mode
+
+**Solutions:**
+- Enable localStorage in browser settings
+- Use a regular (non-private) browser window
+- Check browser console for errors (F12 → Console)
+
+### Onboarding Tour Not Showing
+
+**Cause:** Tour has already been completed.
+
+**Solution:**
+Clear the onboarding flag:
+```javascript
+// In browser console (F12)
+localStorage.removeItem('look-onboarding-complete');
+location.reload();
+```
+
+### Templates Page Is Blank
+
+**Possible Causes:**
+1. JavaScript error
+2. CSS not loading
+
+**Solutions:**
+- Check browser console for errors
+- Hard refresh: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac)
+- Clear browser cache
+
+### Keyboard Shortcuts Not Working
+
+**Possible Causes:**
+1. Focus is in an input field
+2. Modal is open
+
+**Solutions:**
+- Click outside of any input fields
+- Close any open modals
+- Press `Escape` first, then try the shortcut
+
+### Export Fails in Web Editor
+
+**Possible Causes:**
+1. No project loaded
+2. Backend render failed
+3. FFmpeg not installed on server
+
+**Solutions:**
+
+Check browser console for error details.
+
+Verify backend is processing:
+```bash
+curl http://localhost:3847/api/health
+```
+
+Check server logs for FFmpeg errors.
+
+### Live Recording Preview Not Showing
+
+**Possible Causes:**
+1. WebSocket connection failed
+2. Browser blocking WebSocket
+
+**Solutions:**
+
+Check WebSocket connection in browser console:
+```javascript
+// Should show 'open' or connected state
+console.log(window.ws?.readyState);
+```
+
+Try a different browser or disable extensions.
+
+---
+
 ## Still Having Issues?
 
 ### Debug Mode
@@ -566,6 +679,13 @@ Run with debug output:
 ```bash
 DEBUG=1 look demo https://site.com
 ```
+
+### Browser Console Debugging
+
+Open browser developer tools (F12) and check:
+1. **Console** tab for JavaScript errors
+2. **Network** tab for failed API requests
+3. **Application** tab → Local Storage for saved settings
 
 ### Full Test
 
@@ -581,5 +701,7 @@ look test --full
    - LooK version (`look --version`)
    - Node.js version (`node --version`)
    - OS and version
+   - Browser version (for web editor issues)
    - Full error message
+   - Browser console output (for web editor issues)
    - Steps to reproduce

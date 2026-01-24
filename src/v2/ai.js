@@ -48,13 +48,18 @@ let groq = null;
  * Required for: Vision analysis, TTS voiceover.
  * 
  * @returns {OpenAI} OpenAI client instance
- * @throws {Error} If OPENAI_API_KEY environment variable is not set
+ * @throws {Error} If OPENAI_API_KEY environment variable is not set or invalid
  * @private
  */
 function getOpenAI() {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
       throw new Error('OPENAI_API_KEY environment variable is required for vision/voiceover. Set it with: export OPENAI_API_KEY=sk-...');
+    }
+    // Reject placeholder keys
+    if (apiKey.includes('your-key') || apiKey.includes('your_key') || apiKey === 'sk-...' || apiKey.length < 20) {
+      throw new Error('Invalid OPENAI_API_KEY. Please set a real API key from https://platform.openai.com/api-keys');
     }
     openai = new OpenAI();
   }
@@ -71,12 +76,18 @@ function getOpenAI() {
  */
 function getGroq() {
   if (!groq) {
-    if (!process.env.GROQ_API_KEY) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
       return null; // Will fall back to OpenAI
+    }
+    // Reject placeholder keys
+    if (apiKey.includes('your-key') || apiKey.includes('your_key') || apiKey.length < 20) {
+      console.warn('Invalid GROQ_API_KEY detected, falling back to OpenAI');
+      return null;
     }
     // Groq uses OpenAI-compatible API
     groq = new OpenAI({
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey,
       baseURL: 'https://api.groq.com/openai/v1'
     });
   }

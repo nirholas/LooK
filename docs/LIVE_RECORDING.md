@@ -249,3 +249,65 @@ async function interactiveDemo(url) {
 - Call `enableManualMode(sessionId)` first
 - Check that recording isn't paused
 - Verify session is still active
+
+## Web Editor Integration
+
+The web editor provides a visual interface for live recording:
+
+### Starting a Live Recording
+
+1. Enter your URL in the input field
+2. Click **Live Record** (instead of Generate Demo)
+3. The live preview panel opens automatically
+
+### Live Preview Panel
+
+The live preview panel shows:
+- **Real-time video feed** - See exactly what's being recorded
+- **Recording status** - Current state (Recording, Paused, etc.)
+- **Elapsed time** - How long you've been recording
+- **Control buttons** - Pause, Resume, Stop, Take Screenshot
+
+### Recording Controls
+
+| Button | Action | Keyboard |
+|--------|--------|----------|
+| ⏸️ Pause | Pause recording | `P` |
+| ▶️ Resume | Resume after pause | `P` |
+| ⏹️ Stop | End recording | `S` |
+| 📷 Screenshot | Capture current frame | `C` |
+| 🖱️ Manual | Take manual control | `M` |
+
+### Manual Control Mode
+
+When you enable manual control:
+1. Click on the preview to interact with the page
+2. Your mouse movements are captured
+3. Clicks and scrolls are recorded
+4. Press `M` again to return to auto mode
+
+### After Recording
+
+When you stop the recording:
+1. The video is automatically saved to the project
+2. The editor timeline loads your recording
+3. You can trim, add markers, and edit the voiceover script
+4. Export when ready
+
+### Tips for Live Recording
+
+1. **Plan your demo** - Know what you want to show before starting
+2. **Use pause wisely** - Pause to collect your thoughts or fix mistakes
+3. **Slow movements** - Move the cursor slowly and deliberately
+4. **Take screenshots** - Capture key moments for thumbnails
+5. **Watch the timer** - Keep an eye on duration for platform limits
+
+### Platform Duration Limits
+
+| Platform | Max Duration | Recommended |
+|----------|--------------|-------------|
+| Twitter | 2:20 | 0:30 - 1:00 |
+| Instagram Reels | 1:30 | 0:15 - 0:30 |
+| TikTok | 3:00 | 0:15 - 0:60 |
+| YouTube Shorts | 1:00 | 0:30 - 0:60 |
+| YouTube | Unlimited | 1:00 - 5:00 |
