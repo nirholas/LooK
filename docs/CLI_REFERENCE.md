@@ -15,6 +15,10 @@ Complete command reference for LooK v2.0.
 | `look projects` | List saved projects |
 | `look test` | Verify installation |
 | `look devices` | List supported device frames |
+| `look gif <input>` | Convert video to GIF |
+| `look thumbnail <input>` | Generate video thumbnail |
+| `look overlay <input>` | Apply overlays to video |
+| `look captions <input>` | Generate animated captions |
 
 ---
 
@@ -402,6 +406,181 @@ look devices
 |------|---------|
 | `0` | Success |
 | `1` | Error occurred |
+
+---
+
+## `look gif <input>`
+
+**Description:** Convert video to high-quality GIF with palette optimization.
+
+**Usage:**
+```bash
+look gif <input> [options]
+```
+
+**Examples:**
+```bash
+# Basic GIF export
+look gif video.mp4 -o output.gif
+
+# Optimized for smaller size
+look gif video.mp4 --width 480 --fps 10 --quality low -o output.gif
+
+# Extract specific section
+look gif video.mp4 --start 5 --end 15 -o clip.gif
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o, --output <path>` | Output GIF path | `./output.gif` |
+| `--width <pixels>` | Output width (height auto-scales) | `640` |
+| `--fps <number>` | Frames per second | `15` |
+| `--quality <level>` | Quality: low, medium, high | `medium` |
+| `--start <seconds>` | Start time for clipping | `0` |
+| `--end <seconds>` | End time for clipping | (full video) |
+| `--no-loop` | Disable infinite loop | `false` |
+
+### Quality Presets
+
+| Quality | Colors | Dithering | Use Case |
+|---------|--------|-----------|----------|
+| `low` | 128 | None | Previews, small files |
+| `medium` | 256 | Bayer | Balanced |
+| `high` | 256 | Floyd-Steinberg | Best quality |
+
+---
+
+## `look thumbnail <input>`
+
+**Description:** Generate video thumbnail with auto-selection or manual timestamp.
+
+**Usage:**
+```bash
+look thumbnail <input> [options]
+```
+
+**Examples:**
+```bash
+# Auto-select best frame
+look thumbnail video.mp4 --auto --preset youtube -o thumb.png
+
+# Manual timestamp
+look thumbnail video.mp4 --timestamp 12.5 -o thumb.png
+
+# With title overlay
+look thumbnail video.mp4 --auto --title "My Product Demo" -o thumb.png
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o, --output <path>` | Output image path | `./thumbnail.png` |
+| `--auto` | Auto-select best frame | `false` |
+| `--timestamp <seconds>` | Manual timestamp | - |
+| `--preset <platform>` | Size preset | `youtube` |
+| `--title <text>` | Title overlay text | - |
+
+### Platform Presets
+
+| Preset | Dimensions |
+|--------|------------|
+| `youtube` | 1280×720 |
+| `twitter` | 1200×675 |
+| `linkedin` | 1200×627 |
+| `instagram` | 1080×1080 |
+| `tiktok` | 1080×1920 |
+
+---
+
+## `look overlay <input>`
+
+**Description:** Apply professional overlays to video (lower thirds, captions, transitions).
+
+**Usage:**
+```bash
+look overlay <input> [options]
+```
+
+**Examples:**
+```bash
+# Add lower third
+look overlay video.mp4 \
+  --lower-third "John Smith:Product Designer" \
+  --lower-third-style modern \
+  -o output.mp4
+
+# Add scene transitions
+look overlay video.mp4 \
+  --transition blur \
+  --transition-duration 0.5 \
+  -o output.mp4
+
+# Apply captions
+look overlay video.mp4 \
+  --captions subtitles.srt \
+  --captions-style karaoke \
+  -o output.mp4
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o, --output <path>` | Output video path | `./output.mp4` |
+| `--lower-third <text>` | Lower third (Name:Title format) | - |
+| `--lower-third-style <style>` | modern, classic, minimal, gradient | `modern` |
+| `--lower-third-start <s>` | Display start time | `2` |
+| `--lower-third-duration <s>` | Display duration | `5` |
+| `--captions <path>` | SRT captions file | - |
+| `--captions-style <style>` | karaoke, pop, typewriter, fade | `karaoke` |
+| `--transition <type>` | fade, blur, slide-left, slide-right, zoom | - |
+| `--transition-duration <s>` | Transition duration | `0.5` |
+
+---
+
+## `look captions <input>`
+
+**Description:** Generate animated captions from video audio or SRT file.
+
+**Usage:**
+```bash
+look captions <input> [options]
+```
+
+**Examples:**
+```bash
+# Generate captions from video audio
+look captions video.mp4 --output captions.srt
+
+# Apply karaoke-style captions
+look captions video.mp4 --style karaoke --apply output.mp4
+
+# Apply pop-in word animation
+look captions video.mp4 --style pop --apply output.mp4
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-o, --output <path>` | Output SRT file | `./captions.srt` |
+| `--style <style>` | Caption style | `karaoke` |
+| `--apply <path>` | Apply to video (output path) | - |
+| `--position <pos>` | top, center, bottom | `bottom` |
+| `--font-size <px>` | Font size in pixels | `48` |
+
+### Caption Styles
+
+| Style | Description |
+|-------|-------------|
+| `standard` | Traditional subtitles |
+| `karaoke` | Word-by-word highlighting |
+| `pop` | Words pop in sequentially |
+| `typewriter` | Character-by-character reveal |
+| `fade` | Smooth fade transitions |
 
 ---
 

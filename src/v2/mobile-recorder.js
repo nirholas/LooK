@@ -1,6 +1,9 @@
 import { remote } from 'webdriverio';
 import { writeFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
+import { createLogger } from './logger.js';
+
+const log = createLogger('mobile-recorder');
 
 /**
  * MobileRecorder - Appium-based mobile app recording
@@ -111,7 +114,7 @@ export class MobileRecorder {
    */
   async startRecording(options = {}) {
     if (this.isRecording) {
-      console.warn('Recording already in progress');
+      log.warn('Recording already in progress');
       return;
     }
 

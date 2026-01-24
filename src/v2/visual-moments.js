@@ -14,6 +14,9 @@
 
 import OpenAI from 'openai';
 import sharp from 'sharp';
+import { createLogger } from './logger.js';
+
+const log = createLogger('visual-moments');
 
 // ============================================================================
 // Client Management
@@ -889,7 +892,7 @@ Look for:
       }
     }));
   } catch (e) {
-    console.warn('AI visual moment detection failed:', e.message);
+    log.warn('AI visual moment detection failed', { error: e.message });
     return [];
   }
 }

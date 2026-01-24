@@ -13,6 +13,9 @@
  */
 
 import OpenAI from 'openai';
+import { createLogger } from './logger.js';
+
+const log = createLogger('workflow-detector');
 
 // ============================================================================
 // Client Management
@@ -558,7 +561,7 @@ What workflows can users perform here?`
         }
       }));
     } catch (e) {
-      console.warn('AI workflow detection failed:', e.message);
+      log.warn('AI workflow detection failed', { error: e.message });
       return [];
     }
   }

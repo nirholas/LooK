@@ -12,6 +12,7 @@ import { LivePreview } from './live-preview.js';
 import { Onboarding } from './onboarding.js';
 import { SettingsManager } from './settings.js';
 import { handleError } from './error-boundary.js';
+import { TemplateSelector, templateSelectorStyles } from './template-selector.js';
 
 class LookEditor {
   constructor() {
@@ -28,6 +29,8 @@ class LookEditor {
     this.isFullscreen = false;
     this.wsReconnectAttempts = 0;
     this.wsMaxReconnectDelay = 30000; // 30 seconds max
+    this.templateSelector = null;
+    this.selectedTemplate = null;
     
     this.elements = {
       // Start screen
@@ -211,6 +214,7 @@ class LookEditor {
     this.setupDragAndDrop();
     this.setupKeyboardShortcuts();
     this.setupAutoSave();
+    this.setupTemplateSelector();
     this.connectWebSocket();
     await this.loadRecentProjects();
     // Initialize settings manager and onboarding experience
@@ -237,6 +241,42 @@ class LookEditor {
   
   setupKeyboardShortcuts() {
     this.keyboard = new KeyboardShortcuts(this);
+  }
+  
+  /**
+   * Setup template selector component
+   */
+  setupTemplateSelector() {
+    // Inject template selector styles
+    const styleEl = document.createElement('style');
+    styleEl.textContent = templateSelectorStyles;
+    document.head.appendChild(styleEl);
+    
+    // Initialize template selector
+    this.templateSelector = new TemplateSelector({
+      onTemplateSelect: (template) => this.applySelectedTemplate(template)
+    });
+    
+    const startContent = this.elements.startScreen?.querySelector('.start-content');
+    if (startContent) {
+      this.templateSelector.init(startContent);
+    }
+  }
+  
+  /**
+   * Apply selected template settings
+   */
+  applySelectedTemplate(template) {
+    this.selectedTemplate = template;
+    
+    // Store template settings to apply when generating demo
+    toast(`Template "${template.name}" selected. Start a demo to apply settings.`, 'success');
+    
+    // If a URL is already entered, show hint
+    const url = this.elements.urlInput?.value;
+    if (url) {
+      toast('Click "Generate Demo" to create a demo with this template', 'info');
+    }
   }
   
   setupAutoSave() {
@@ -1214,18 +1254,35 @@ look serve              # Start the web UI</code></pre>
     
     try {
       this.updateLoadingMessage('Running AI analysis...');
-      const result = await API.analyze(url);
+      
+      // Prepare options with template settings if selected
+      const options = {};
+      if (this.selectedTemplate) {
+        options.template = this.selectedTemplate.id;
+        toast(`Using "${this.selectedTemplate.name}" template settings`, 'info');
+      }
+      
+      const result = await API.analyze(url, options);
       this.currentProject = result;
       
       this.setStatus('Analysis complete! Starting recording...');
       this.updateLoadingMessage('Starting recording...');
       
-      // Start recording
-      const recordResult = await API.record(result.projectId);
+      // Start recording with template options
+      const recordOptions = this.selectedTemplate ? {
+        zoom: this.selectedTemplate.config?.zoom,
+        cursor: this.selectedTemplate.config?.cursor,
+        timing: this.selectedTemplate.config?.settings
+      } : {};
+      
+      const recordResult = await API.record(result.projectId, recordOptions);
       
       // Load the full project
       this.updateLoadingMessage('Loading project...');
       await this.loadProject(result.projectId);
+      
+      // Clear selected template after use
+      this.selectedTemplate = null;
       
       this.hideLoading();
       this.announce('Recording complete');

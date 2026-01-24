@@ -19,6 +19,23 @@ import { detectImportType, validateUrl, processImport } from './import.js';
 import { openApiSpec, generateSwaggerHtml } from './openapi.js';
 import { createLogger, httpLogger } from './logger.js';
 import { errorHandler, ValidationError, NotFoundError, asyncHandler } from './errors.js';
+import { 
+  securityHeaders, 
+  cors, 
+  apiRateLimit, 
+  strictRateLimit,
+  ssrfProtection,
+  validateEnvironment 
+} from './security.js';
+import { 
+  getAllTemplates, 
+  getTemplate, 
+  getTemplatesByCategory, 
+  searchTemplates, 
+  getCategories,
+  applyTemplate,
+  suggestTemplates 
+} from './templates.js';
 
 // Auth and billing (lazy loaded to avoid startup errors if deps not installed)
 let authRoutes, billingRoutes, initDatabase;
@@ -28,7 +45,7 @@ try {
   const db = await import('../db/index.js');
   initDatabase = db.initDatabase;
 } catch (err) {
-  console.warn('Auth/billing modules not loaded:', err.message);
+  log.warn('Auth/billing modules not loaded:', err.message);
 }
 
 // Create server logger
@@ -79,6 +96,16 @@ function sendToClient(ws, type, data) {
 export async function startServer(options = {}) {
   log.info('Starting server', { options });
   
+  // Validate environment configuration
+  try {
+    validateEnvironment();
+  } catch (err) {
+    log.error('Environment validation failed:', err.message);
+    if (process.env.NODE_ENV === 'production') {
+      throw err;
+    }
+  }
+  
   const {
     port = process.env.PORT || 3847,
     openBrowser = true,
@@ -92,6 +119,33 @@ export async function startServer(options = {}) {
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
 
+  // ============================================================
+  // Security Middleware
+  // ============================================================
+  
+  // Security headers (XSS, clickjacking, CSP, etc.)
+  app.use(securityHeaders());
+  
+  // CORS configuration
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true
+  }));
+  
+  // Rate limiting for API routes
+  app.use('/api/', apiRateLimit());
+  
+  // Strict rate limiting for sensitive endpoints
+  app.use('/auth/', strictRateLimit());
+  app.use('/billing/', strictRateLimit());
+  
+  // SSRF protection
+  app.use(ssrfProtection());
+
+  // ============================================================
+  // Request Parsing
+  // ============================================================
+  
   app.use(express.json({ limit: '50mb' }));
   app.use(cookieParser());
   
@@ -277,6 +331,93 @@ export async function startServer(options = {}) {
       apiCalls: { ...metrics.apiCalls },
       activeConnections: clients.size,
       activeLiveSessions: liveSessions.size
+    });
+  });
+
+  // ============================================================
+  // Templates API - Pre-built demo configurations
+  // ============================================================
+
+  /**
+   * GET /api/templates - List all available templates
+   */
+  app.get('/api/templates', (req, res) => {
+    const { category, search } = req.query;
+    
+    let templates;
+    if (search) {
+      templates = searchTemplates(search);
+    } else if (category) {
+      templates = getTemplatesByCategory(category);
+    } else {
+      templates = getAllTemplates();
+    }
+    
+    res.json({ 
+      templates: templates.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        category: t.category,
+        tags: t.tags,
+        settings: {
+          duration: t.settings.duration,
+          preset: t.settings.preset
+        }
+      }))
+    });
+  });
+
+  /**
+   * GET /api/templates/categories - List template categories with counts
+   */
+  app.get('/api/templates/categories', (req, res) => {
+    res.json({ categories: getCategories() });
+  });
+
+  /**
+   * GET /api/templates/:id - Get full template details
+   */
+  app.get('/api/templates/:id', (req, res) => {
+    const template = getTemplate(req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    res.json({ template });
+  });
+
+  /**
+   * POST /api/templates/:id/apply - Apply template to generate options
+   */
+  app.post('/api/templates/:id/apply', (req, res) => {
+    const { overrides = {} } = req.body;
+    
+    try {
+      const options = applyTemplate(req.params.id, overrides);
+      res.json({ options });
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/templates/suggest - Suggest templates based on website analysis
+   */
+  app.post('/api/templates/suggest', (req, res) => {
+    const { analysis } = req.body;
+    
+    if (!analysis) {
+      return res.status(400).json({ error: 'Analysis object is required' });
+    }
+    
+    const suggestions = suggestTemplates(analysis);
+    res.json({ 
+      suggestions: suggestions.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        category: t.category
+      }))
     });
   });
 
@@ -1431,6 +1572,10 @@ export async function startServer(options = {}) {
     // Bind to 0.0.0.0 to allow external connections (required for Docker/Railway)
     server.listen(actualPort, host, () => {
       const url = `http://localhost:${actualPort}`;
+      log.info(`L👀K Editor running at ${url}`);
+      log.info(`Listening on ${host}:${actualPort}`);
+      
+      // Console output for visibility
       console.log(chalk.green(`\n✨ L👀K Editor running at ${chalk.bold(url)}`));
       console.log(chalk.dim(`   Listening on ${host}:${actualPort}\n`));
       
@@ -1448,8 +1593,89 @@ export async function startServer(options = {}) {
         });
       }
       
+      // Setup graceful shutdown
+      setupGracefulShutdown(server, wss, liveSessions);
+      
       resolve({ server, app, wss, url });
     });
+  });
+}
+
+/**
+ * Setup graceful shutdown handlers
+ * @param {import('http').Server} server - HTTP server
+ * @param {WebSocketServer} wss - WebSocket server
+ * @param {Map} liveSessions - Active live recording sessions
+ */
+function setupGracefulShutdown(server, wss, liveSessions) {
+  let isShuttingDown = false;
+  
+  const shutdown = async (signal) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    log.info(`Received ${signal}, starting graceful shutdown...`);
+    console.log(chalk.yellow(`\n⏳ Shutting down gracefully...`));
+    
+    // Stop accepting new connections
+    server.close(() => {
+      log.info('HTTP server closed');
+    });
+    
+    // Close WebSocket connections gracefully
+    for (const client of wss.clients) {
+      try {
+        client.send(JSON.stringify({ type: 'server-shutdown', message: 'Server is shutting down' }));
+        client.close(1001, 'Server shutting down');
+      } catch (e) {
+        // Ignore errors during shutdown
+      }
+    }
+    
+    // Stop all live recording sessions
+    for (const [id, session] of liveSessions) {
+      try {
+        log.info(`Stopping live session: ${id}`);
+        if (session.recorder && typeof session.recorder.stop === 'function') {
+          await session.recorder.stop();
+        }
+      } catch (e) {
+        log.warn(`Error stopping session ${id}:`, e.message);
+      }
+    }
+    liveSessions.clear();
+    
+    // Close any open browser instances
+    try {
+      const { chromium } = await import('playwright');
+      // Note: Playwright doesn't have a global close, but individual browsers should be closed
+    } catch (e) {
+      // Ignore
+    }
+    
+    log.info('Graceful shutdown complete');
+    console.log(chalk.green('✓ Shutdown complete'));
+    
+    // Exit after a timeout to allow logs to flush
+    setTimeout(() => {
+      process.exit(0);
+    }, 1000);
+  };
+  
+  // Handle termination signals
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  
+  // Handle uncaught errors during shutdown
+  process.on('uncaughtException', (err) => {
+    log.error('Uncaught exception:', err);
+    if (!isShuttingDown) {
+      shutdown('uncaughtException');
+    }
+  });
+  
+  process.on('unhandledRejection', (reason, promise) => {
+    log.error('Unhandled rejection at:', promise, 'reason:', reason);
   });
 }
 
