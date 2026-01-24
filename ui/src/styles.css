@@ -1001,6 +1001,10 @@ body {
   animation: modalFadeIn 0.2s ease-out;
 }
 
+.modal.hidden {
+  display: none;
+}
+
 @keyframes modalFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
