@@ -20,7 +20,7 @@ import { WorkflowDetector, detectWorkflows, WORKFLOW_PATTERNS } from './workflow
 import { VisualMomentDetector, detectVisualMoments, MOMENT_TYPES } from './visual-moments.js';
 import { SmartComposer, composeDemo, STORY_ARCS, PACING_STYLES } from './smart-composer.js';
 import { QualityScorer, scoreDemo, QUALITY_CRITERIA, QUALITY_GRADES } from './quality-scorer.js';
-import { IntelligentOrchestrator, generateIntelligentDemo, quickDemo } from './intelligent-orchestrator.js';
+import { IntelligentOrchestrator, generateIntelligentDemo, quickDemo as quickSmartDemo } from './intelligent-orchestrator.js';
 // Multi-page and mobile imports are lazy-loaded to avoid requiring dependencies when not used
 // import { generateMultiPageDemo } from './multi-page-recorder.js';
 // import { MobileRecorder } from './mobile-recorder.js';
@@ -1021,7 +1021,7 @@ export {
 export {
   IntelligentOrchestrator,
   generateIntelligentDemo as generateSmartDemo,
-  quickDemo
+  quickDemo as quickSmartDemo
 } from './intelligent-orchestrator.js';
 
 // v2.2 Features - Demo Templates

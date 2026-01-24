@@ -10,6 +10,9 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { Project } from './project.js';
 import { analyzeWebsite, generateScript } from './ai.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('import');
 
 /**
  * Detect import type from URL
@@ -182,7 +185,7 @@ async function processGitImport(project, url, options, broadcast) {
         project.analysis.screenshot = screenshot;
         project.url = packageInfo.homepage;
       } catch (e) {
-        console.warn('Could not capture homepage:', e.message);
+        log.warn('Could not capture homepage', { error: e.message });
         project.url = url;
       }
     } else {

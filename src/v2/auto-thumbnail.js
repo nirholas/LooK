@@ -15,6 +15,7 @@ import { join, dirname, basename, extname } from 'path';
 import { mkdir, readdir, readFile, writeFile, stat, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import sharp from 'sharp';
+import { escapeXml as escapeXmlUtil } from './utils.js';
 
 const execAsync = promisify(exec);
 
@@ -607,11 +608,7 @@ export class ThumbnailGenerator {
    * Escape XML
    */
   escapeXml(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeXmlUtil(text);
   }
 }
 

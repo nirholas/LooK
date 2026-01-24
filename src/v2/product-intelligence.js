@@ -14,6 +14,9 @@
 
 import OpenAI from 'openai';
 import sharp from 'sharp';
+import { createLogger } from './logger.js';
+
+const log = createLogger('product-intelligence');
 
 // ============================================================================
 // Client Management
@@ -282,7 +285,7 @@ Extract the complete DNA of this product. Be specific and insightful.`
     const dna = JSON.parse(response.choices[0].message.content);
     return validateProductDNA(dna);
   } catch (e) {
-    console.warn('Failed to parse product DNA:', e.message);
+    log.warn('Failed to parse product DNA', { error: e.message });
     return getDefaultDNA(pageInfo);
   }
 }

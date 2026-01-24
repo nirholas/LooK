@@ -12,6 +12,9 @@
  */
 
 import OpenAI from 'openai';
+import { createLogger } from './logger.js';
+
+const log = createLogger('smart-composer');
 
 // ============================================================================
 // Client Management
@@ -647,7 +650,7 @@ Create engaging narration that guides viewers through the demo.`
         estimatedDuration: Math.round((result.fullScript?.split(/\s+/).length || 0) / pacing.wordsPerSecond * 1000)
       };
     } catch (e) {
-      console.warn('Narration generation failed:', e.message);
+      log.warn('Narration generation failed', { error: e.message });
       return this.generateFallbackNarration(product, contentPlan);
     }
   }

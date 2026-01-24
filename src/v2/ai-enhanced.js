@@ -16,6 +16,9 @@ import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import sharp from 'sharp';
+import { createLogger } from './logger.js';
+
+const log = createLogger('ai-enhanced');
 
 // ============================================================================
 // Client Management
@@ -103,7 +106,7 @@ async function compressForVision(base64Png, detail = 'high') {
       mimeType: 'image/jpeg'
     };
   } catch (e) {
-    console.warn('Image compression failed:', e.message);
+    log.warn('Image compression failed', { error: e.message });
     return { base64: base64Png, mimeType: 'image/png' };
   }
 }
@@ -536,7 +539,7 @@ For demoJourney, use actual pixel coordinates based on the viewport (${pageInfo?
     analysis._pageInfo = pageInfo;
     return analysis;
   } catch (e) {
-    console.warn('Failed to parse analysis JSON:', e.message);
+    log.warn('Failed to parse analysis JSON', { error: e.message });
     return {
       description: content,
       keyFeatures: [],
@@ -757,10 +760,10 @@ Just the script, nothing else.`;
           content: prompt
         }]
       });
-      console.log('  [Using Claude for script generation]');
+      log.debug('Using Claude for script generation');
       return response.content[0].text.trim();
     } catch (e) {
-      console.warn('  [Claude failed, falling back]', e.message);
+      log.warn('Claude failed, falling back', { error: e.message });
     }
   }
   
@@ -774,10 +777,10 @@ Just the script, nothing else.`;
         temperature: 0.8,
         max_tokens: 500
       });
-      console.log('  [Using Groq for script generation]');
+      log.debug('Using Groq for script generation');
       return response.choices[0].message.content.trim();
     } catch (e) {
-      console.warn('  [Groq failed, falling back to OpenAI]', e.message);
+      log.warn('Groq failed, falling back to OpenAI', { error: e.message });
     }
   }
   

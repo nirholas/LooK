@@ -162,9 +162,10 @@ extra:
   version:
     provider: mike
     default: latest
-  analytics:
-    provider: google
-    property: G-XXXXXXXXXX
+  # Analytics: Set GOOGLE_ANALYTICS_ID environment variable or update property below
+  # analytics:
+  #   provider: google
+  #   property: G-XXXXXXXXXX  # Replace with your actual Google Analytics ID
   consent:
     title: Cookie consent
     description: >-

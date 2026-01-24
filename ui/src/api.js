@@ -470,6 +470,61 @@ export const API = {
    */
   updateTransitions(projectId, transitions) {
     return request('PUT', `/api/project/${projectId}/transitions`, { transitions });
+  },
+
+  // ============================================================
+  // Templates API
+  // ============================================================
+
+  /**
+   * Get all available templates
+   * @param {Object} options - Filter options
+   * @param {string} [options.category] - Filter by category
+   * @param {string} [options.search] - Search query
+   * @returns {Promise<{templates: Array}>}
+   */
+  getTemplates(options = {}) {
+    const params = new URLSearchParams();
+    if (options.category) params.set('category', options.category);
+    if (options.search) params.set('search', options.search);
+    const query = params.toString();
+    return request('GET', `/api/templates${query ? '?' + query : ''}`);
+  },
+
+  /**
+   * Get template categories with counts
+   * @returns {Promise<{categories: Array<{id: string, name: string, count: number}>}>}
+   */
+  getTemplateCategories() {
+    return request('GET', '/api/templates/categories');
+  },
+
+  /**
+   * Get full template details
+   * @param {string} templateId - Template ID
+   * @returns {Promise<{template: Object}>}
+   */
+  getTemplate(templateId) {
+    return request('GET', `/api/templates/${templateId}`);
+  },
+
+  /**
+   * Apply template settings with optional overrides
+   * @param {string} templateId - Template ID
+   * @param {Object} overrides - Settings to override
+   * @returns {Promise<{options: Object}>}
+   */
+  applyTemplate(templateId, overrides = {}) {
+    return request('POST', `/api/templates/${templateId}/apply`, { overrides });
+  },
+
+  /**
+   * Get template suggestions based on website analysis
+   * @param {Object} analysis - Website analysis result
+   * @returns {Promise<{suggestions: Array}>}
+   */
+  suggestTemplates(analysis) {
+    return request('POST', '/api/templates/suggest', { analysis });
   }
 };
 
