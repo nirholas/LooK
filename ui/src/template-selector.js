@@ -76,7 +76,7 @@ export class TemplateSelector {
   createModal() {
     this.modal = document.createElement('div');
     this.modal.id = 'template-modal';
-    this.modal.className = 'modal template-modal';
+    this.modal.className = 'modal template-modal hidden';
     this.modal.innerHTML = `
       <div class="modal-content template-modal-content">
         <div class="modal-header">
@@ -220,7 +220,7 @@ export class TemplateSelector {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.modal.classList.contains('visible')) {
+      if (e.key === 'Escape' && !this.modal.classList.contains('hidden')) {
         this.closeModal();
       }
     });
@@ -230,7 +230,7 @@ export class TemplateSelector {
    * Open the template modal
    */
   openModal() {
-    this.modal.classList.add('visible');
+    this.modal.classList.remove('hidden');
     document.body.classList.add('modal-open');
     
     // Focus search input
@@ -244,7 +244,7 @@ export class TemplateSelector {
    * Close the template modal
    */
   closeModal() {
-    this.modal.classList.remove('visible');
+    this.modal.classList.add('hidden');
     document.body.classList.remove('modal-open');
   }
 
