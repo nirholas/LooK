@@ -117,6 +117,35 @@ look walkthrough https://your-app.com --focus technical
 - **🎨 Pro Polish** - Color grading, vignette, motion blur
 - **📱 Multi-Platform** - Export for YouTube, Twitter, Instagram, TikTok
 - **🗺️ Site Explorer** - AI navigates through multiple pages automatically
+- **🖥️ Web Editor** - Enterprise-grade visual editing interface
+- **📋 Templates** - Pre-built configurations for common use cases
+
+## Web Editor
+
+Start the visual editor for a more interactive experience:
+
+```bash
+look serve
+```
+
+### Features
+
+- **First-run onboarding** - Guided tour of key features
+- **Settings panel** - Configure API keys directly in the browser
+- **Templates** - Pre-built demo configurations (SaaS, E-commerce, Portfolio, etc.)
+- **Built-in docs** - Access documentation without leaving the editor
+- **Live recording** - Real-time preview while recording
+- **Timeline editing** - Visual editing of markers, zoom, and effects
+- **Keyboard shortcuts** - Press `Shift + ?` to view all shortcuts
+
+### API Key Setup
+
+You can configure API keys in two ways:
+
+1. **Environment variables** (CLI): `export OPENAI_API_KEY=sk-...`
+2. **Web UI Settings**: Click ⚙️ Settings → API Keys → Enter your keys
+
+See [Web Editor Guide](./docs/WEB_EDITOR.md) for full documentation.
 
 ## Options
 

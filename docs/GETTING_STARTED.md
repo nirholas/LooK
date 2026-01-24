@@ -38,6 +38,7 @@ Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH.
 
 LooK uses GPT-4 Vision for analysis and OpenAI TTS for voiceover.
 
+**Option A: Environment Variable (CLI)**
 ```bash
 # Set your API key
 export OPENAI_API_KEY=sk-your-key-here
@@ -45,6 +46,15 @@ export OPENAI_API_KEY=sk-your-key-here
 # Or add to your ~/.bashrc or ~/.zshrc
 echo 'export OPENAI_API_KEY=sk-your-key-here' >> ~/.zshrc
 ```
+
+**Option B: Web UI Settings**
+
+When using the web editor, you can configure API keys directly in the Settings panel:
+1. Open the web editor with `look serve`
+2. Click the ⚙️ Settings button (or click the API status indicator)
+3. Enter your OpenAI API key
+4. Optionally add a Groq API key for alternative script generation
+5. Click Save Settings
 
 Get your API key at [platform.openai.com](https://platform.openai.com/api-keys).
 
@@ -196,8 +206,18 @@ This opens a web interface where you can:
 - Adjust zoom keyframes
 - Fine-tune cursor effects
 - Add custom voiceover
+- Configure API keys in Settings
+- Use pre-built templates for common use cases
+- Access built-in documentation
 
-See [WEB_EDITOR.md](./WEB_EDITOR.md) for details.
+### First-Time Setup in Web Editor
+
+1. **Onboarding Tour** - A guided tour highlights key features on first visit
+2. **Configure API Keys** - Click Settings → API Keys to add your OpenAI key
+3. **Choose a Template** - Navigate to Templates for pre-configured setups
+4. **Enter URL** - Paste your website URL and click Generate Demo
+
+See [WEB_EDITOR.md](./WEB_EDITOR.md) for full documentation.
 
 ## Verify Your Setup
 
