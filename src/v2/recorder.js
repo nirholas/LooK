@@ -220,6 +220,11 @@ export async function recordBrowser(url, options = {}) {
  * 
  * Performs an automated walkthrough of the page with natural-looking
  * mouse movements, scrolling, and clicks on interactive elements.
+ * Enhanced with:
+ * - Section-aware navigation
+ * - Priority-based element interaction
+ * - Natural cursor movement with bezier curves
+ * - Adaptive timing based on content
  * 
  * @param {import('playwright').Page} page - Playwright page instance
  * @param {CursorTracker} cursorTracker - Cursor tracker for recording positions
@@ -231,218 +236,388 @@ export async function recordBrowser(url, options = {}) {
  */
 async function autoDemo(page, cursorTracker, duration, width, height) {
   const startTime = Date.now();
+  const visitedElements = new Set();
   
-  // Get page info and find key interactive elements
-  const pageInfo = await page.evaluate(() => {
+  // Get comprehensive page analysis
+  const pageInfo = await analyzePageForDemo(page);
+  const maxScroll = Math.max(0, pageInfo.pageHeight - pageInfo.viewportHeight);
+  
+  // Calculate time budget
+  const heroTime = Math.min(5000, duration * 0.2);          // 20% for hero
+  const contentTime = duration * 0.65;                       // 65% for content
+  const outroTime = Math.min(3000, duration * 0.15);        // 15% for outro
+  
+  // ===== PHASE 1: Hero Section =====
+  await sleep(800);
+  
+  // Scan hero area naturally
+  await scanArea(page, cursorTracker, {
+    startX: width * 0.15,
+    startY: height * 0.25,
+    endX: width * 0.75,
+    endY: height * 0.35,
+    duration: heroTime * 0.4
+  });
+  
+  // Find and interact with hero CTA
+  const heroCTA = pageInfo.cta || pageInfo.buttons[0];
+  if (heroCTA && heroCTA.y < height * 0.7) {
+    await naturalMoveCursor(page, cursorTracker, heroCTA.x, heroCTA.y, 450);
+    await sleep(300);
+    await page.mouse.click(heroCTA.x, heroCTA.y);
+    cursorTracker.recordClick(heroCTA.x, heroCTA.y, Date.now(), heroCTA.element);
+    visitedElements.add(elementKey(heroCTA));
+    await sleep(600);
+  }
+  
+  await sleep(heroTime * 0.3);
+
+  // ===== PHASE 2: Content Exploration =====
+  const sections = identifySections(pageInfo, height);
+  const timePerSection = contentTime / Math.max(1, sections.length);
+  
+  for (let i = 0; i < sections.length; i++) {
+    if (Date.now() - startTime >= duration - outroTime) break;
+    
+    const section = sections[i];
+    
+    // Smooth scroll to section
+    await smoothScrollTo(page, section.scrollY, 900);
+    await sleep(500);
+    
+    // Find interesting elements in this section
+    const sectionElements = prioritizeElements(
+      section.elements,
+      visitedElements,
+      section.type
+    );
+    
+    // Explore 2-4 elements per section
+    const elementsToVisit = sectionElements.slice(0, Math.min(4, Math.ceil(timePerSection / 1500)));
+    
+    for (const el of elementsToVisit) {
+      if (Date.now() - startTime >= duration - outroTime) break;
+      
+      // Natural movement to element
+      await naturalMoveCursor(page, cursorTracker, el.x, el.y, 350);
+      await sleep(200);
+      
+      // Interact with high-value elements
+      if (el.importance === 'high' && Math.random() > 0.3) {
+        await page.mouse.click(el.x, el.y);
+        cursorTracker.recordClick(el.x, el.y, Date.now(), el.element);
+        await sleep(400);
+      } else {
+        // Just hover and show
+        await sleep(600);
+      }
+      
+      visitedElements.add(elementKey(el));
+    }
+    
+    // Brief pause at end of section
+    await sleep(Math.max(300, timePerSection - (elementsToVisit.length * 1200)));
+  }
+
+  // ===== PHASE 3: Outro =====
+  await sleep(300);
+  await smoothScrollTo(page, 0, 1000);
+  await sleep(600);
+  
+  // Final cursor position on main CTA
+  if (heroCTA) {
+    await naturalMoveCursor(page, cursorTracker, heroCTA.x, heroCTA.y, 500);
+  } else {
+    await naturalMoveCursor(page, cursorTracker, width * 0.5, height * 0.4, 400);
+  }
+  await sleep(outroTime - 1500);
+}
+
+/**
+ * Analyze page for demo with enhanced element detection
+ */
+async function analyzePageForDemo(page) {
+  return await page.evaluate(() => {
+    // Helper to get section context
+    const getSectionContext = (el) => {
+      let current = el;
+      while (current && current !== document.body) {
+        const tag = current.tagName.toLowerCase();
+        const className = (current.className || '').toLowerCase();
+        const id = (current.id || '').toLowerCase();
+        const text = (current.textContent || '').toLowerCase().slice(0, 200);
+        
+        if (tag === 'header' || className.includes('header') || id.includes('header')) return 'header';
+        if (tag === 'footer' || className.includes('footer') || id.includes('footer')) return 'footer';
+        if (tag === 'nav' || className.includes('nav')) return 'navigation';
+        if (className.includes('hero') || id.includes('hero')) return 'hero';
+        if (className.includes('pricing') || id.includes('pricing') || text.includes('pricing')) return 'pricing';
+        if (className.includes('feature') || id.includes('feature') || text.includes('feature')) return 'features';
+        if (className.includes('testimonial') || text.includes('customer') || text.includes('review')) return 'testimonials';
+        if (className.includes('faq') || text.includes('frequently')) return 'faq';
+        if (className.includes('how') || text.includes('how it works')) return 'how-it-works';
+        
+        current = current.parentElement;
+      }
+      return 'content';
+    };
+    
+    // Helper to determine element importance
+    const getImportance = (el) => {
+      const text = (el.textContent || '').toLowerCase();
+      const className = (el.className || '').toLowerCase();
+      
+      // High importance triggers
+      if (/get started|try free|sign up|start|demo|buy now|subscribe/i.test(text)) return 'high';
+      if (/cta|primary|hero|main/i.test(className)) return 'high';
+      
+      // Medium importance
+      if (/learn more|see|view|explore|read/i.test(text)) return 'medium';
+      if (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') return 'medium';
+      
+      return 'low';
+    };
+    
+    // Find all interactive elements with rich metadata
     const findElements = (selectors) => {
       const results = [];
+      const seen = new Set();
+      
       for (const sel of selectors) {
         document.querySelectorAll(sel).forEach(el => {
           const rect = el.getBoundingClientRect();
-          if (rect.width > 30 && rect.height > 20 && rect.top >= 0 && rect.left >= 0) {
-            results.push({
-              x: rect.left + rect.width / 2,
-              y: rect.top + rect.height / 2,
-              scrollY: window.scrollY,
+          const key = `${Math.round(rect.x)},${Math.round(rect.y)}`;
+          
+          // Skip tiny, hidden, or duplicate elements
+          if (rect.width < 30 || rect.height < 20 || seen.has(key)) return;
+          if (rect.top < -100 || rect.left < 0) return;
+          
+          seen.add(key);
+          
+          const text = (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 50);
+          
+          results.push({
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2 + window.scrollY,
+            viewportY: rect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height,
+            type: el.tagName.toLowerCase(),
+            text: text.split('\n')[0].trim(),
+            section: getSectionContext(el),
+            importance: getImportance(el),
+            isButton: el.tagName === 'BUTTON' || el.getAttribute('role') === 'button',
+            element: {
+              text: text.slice(0, 30),
               type: el.tagName.toLowerCase(),
-              text: (el.textContent || '').substring(0, 30).trim()
-            });
-          }
+              tag: el.tagName.toLowerCase(),
+              section: getSectionContext(el),
+              ariaLabel: el.getAttribute('aria-label') || ''
+            }
+          });
         });
       }
       return results;
     };
-
+    
+    const buttons = findElements([
+      'button:not([disabled])', 
+      'a.btn', '.btn', 
+      '[class*="button"]:not([disabled])', 
+      '[class*="cta"]',
+      'a[href]:not([href^="#"]):not([href^="javascript"])', 
+      '[role="button"]'
+    ]);
+    
+    const cards = findElements([
+      '[class*="card"]',
+      '[class*="feature"]',
+      '[class*="benefit"]',
+      '[class*="pricing"]',
+      'article'
+    ]);
+    
+    // Find main CTA
+    const cta = buttons.find(b => 
+      b.importance === 'high' && 
+      b.viewportY < window.innerHeight * 0.8
+    );
+    
     return {
       pageHeight: document.body.scrollHeight,
       viewportHeight: window.innerHeight,
-      // Find clickable elements
-      buttons: findElements([
-        'button', 'a.btn', '.btn', '[class*="button"]', '[class*="Button"]',
-        '[class*="cta"]', '[class*="CTA"]', 'a[href]', '[role="button"]'
-      ]).slice(0, 20),
-      // Find feature cards and sections
-      features: findElements([
-        '[class*="feature"]', '[class*="card"]', '[class*="benefit"]',
-        '[class*="pricing"]', 'section', 'article'
-      ]).slice(0, 10),
-      // Find form inputs
-      inputs: findElements(['input', 'textarea', 'select']).slice(0, 5)
+      viewportWidth: window.innerWidth,
+      buttons: buttons.slice(0, 25),
+      cards: cards.slice(0, 15),
+      cta,
+      title: document.title
     };
   });
-
-  const maxScroll = Math.max(0, pageInfo.pageHeight - pageInfo.viewportHeight);
-  
-  // Helper to find visible clickable element at current scroll with element context
-  const findVisibleClickable = async () => {
-    return await page.evaluate(() => {
-      const selectors = [
-        'button:not([disabled])', 'a.btn', '.btn', '[class*="button"]:not([disabled])',
-        '[class*="cta"]', 'a[href]:not([href^="#"])', '[role="button"]'
-      ];
-      
-      // Helper to get section context
-      const getSectionContext = (el) => {
-        let current = el;
-        while (current && current !== document.body) {
-          const tag = current.tagName.toLowerCase();
-          const className = (current.className || '').toLowerCase();
-          const id = (current.id || '').toLowerCase();
-          
-          if (tag === 'header' || className.includes('header') || id.includes('header')) return 'header';
-          if (tag === 'footer' || className.includes('footer') || id.includes('footer')) return 'footer';
-          if (tag === 'nav' || className.includes('nav')) return 'navigation';
-          if (className.includes('hero') || id.includes('hero')) return 'hero';
-          if (className.includes('pricing') || id.includes('pricing')) return 'pricing';
-          if (className.includes('feature') || id.includes('feature')) return 'features';
-          if (className.includes('testimonial') || id.includes('testimonial')) return 'testimonials';
-          if (className.includes('contact') || id.includes('contact')) return 'contact';
-          if (className.includes('faq') || id.includes('faq')) return 'faq';
-          if (className.includes('about') || id.includes('about')) return 'about';
-          
-          current = current.parentElement;
-        }
-        return 'content';
-      };
-      
-      // Helper to get element type
-      const getElementType = (el) => {
-        const tag = el.tagName.toLowerCase();
-        const role = el.getAttribute('role');
-        const className = el.className || '';
-        
-        if (tag === 'button' || role === 'button') return 'button';
-        if (tag === 'a') return 'link';
-        if (className.includes('cta') || className.includes('CTA')) return 'cta';
-        if (className.includes('card')) return 'card';
-        return tag;
-      };
-      
-      for (const sel of selectors) {
-        const elements = document.querySelectorAll(sel);
-        for (const el of elements) {
-          const rect = el.getBoundingClientRect();
-          // Check if element is visible in viewport (not too close to edges)
-          if (rect.top > 80 && rect.top < window.innerHeight - 80 &&
-              rect.left > 50 && rect.left < window.innerWidth - 50 &&
-              rect.width > 40 && rect.height > 25) {
-            const text = (el.innerText || el.textContent || '').trim().substring(0, 50).split('\\n')[0].trim();
-            return { 
-              x: rect.left + rect.width / 2, 
-              y: rect.top + rect.height / 2,
-              text: text.substring(0, 30),
-              element: {
-                text: text,
-                type: getElementType(el),
-                tag: el.tagName.toLowerCase(),
-                section: getSectionContext(el),
-                ariaLabel: el.getAttribute('aria-label') || '',
-                placeholder: el.getAttribute('placeholder') || ''
-              }
-            };
-          }
-        }
-      }
-      return null;
-    });
-  };
-
-  // ===== PHASE 1: Hero Section (first 4 seconds) =====
-  await sleep(1500);
-  
-  // Start from center-left and scan across hero
-  await smoothMoveCursor(page, cursorTracker, width * 0.25, height * 0.35, 500);
-  await sleep(600);
-  await smoothMoveCursor(page, cursorTracker, width * 0.65, height * 0.35, 800);
-  await sleep(400);
-  
-  // Find and click CTA button in hero
-  let heroBtn = await findVisibleClickable();
-  if (heroBtn) {
-    await smoothMoveCursor(page, cursorTracker, heroBtn.x, heroBtn.y, 400);
-    await sleep(200);
-    // Perform actual click to trigger visual feedback
-    await page.mouse.click(heroBtn.x, heroBtn.y);
-    cursorTracker.recordClick(heroBtn.x, heroBtn.y, Date.now(), heroBtn.element);
-    await sleep(600);
-  }
-  
-  // ===== PHASE 2: Scroll Through Content =====
-  const numSections = Math.min(4, Math.max(2, Math.ceil(maxScroll / height)));
-  const scrollPerSection = maxScroll / numSections;
-  const timePerSection = Math.max(2000, (duration - 8000) / numSections);
-
-  for (let i = 1; i <= numSections && Date.now() - startTime < duration - 4000; i++) {
-    const targetScroll = Math.min(scrollPerSection * i, maxScroll);
-    
-    // Smooth scroll
-    await page.evaluate((y) => {
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }, targetScroll);
-    await sleep(1000);
-
-    // Pan cursor across this section to show content
-    await smoothMoveCursor(page, cursorTracker, width * 0.3, height * 0.4, 400);
-    await sleep(400);
-    await smoothMoveCursor(page, cursorTracker, width * 0.6, height * 0.5, 600);
-    
-    // Find something to click in this section
-    const clickTarget = await findVisibleClickable();
-    if (clickTarget && Math.random() > 0.3) { // Click 70% of found targets
-      await smoothMoveCursor(page, cursorTracker, clickTarget.x, clickTarget.y, 350);
-      await sleep(150);
-      await page.mouse.click(clickTarget.x, clickTarget.y);
-      cursorTracker.recordClick(clickTarget.x, clickTarget.y, Date.now(), clickTarget.element);
-      await sleep(400);
-    }
-    
-    // Dwell to show content
-    await sleep(Math.max(300, timePerSection - 2200));
-  }
-
-  // ===== PHASE 3: Return to Top =====
-  await sleep(400);
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  await sleep(1200);
-  
-  // Final position at center with a subtle movement
-  await smoothMoveCursor(page, cursorTracker, width * 0.5, height * 0.4, 400);
-  await sleep(500);
 }
 
 /**
- * Smooth cursor movement simulation with easing.
- * 
- * Moves the cursor from its current position to the target coordinates
- * using cubic ease-out interpolation for natural-looking movement.
- * 
- * @param {import('playwright').Page} page - Playwright page instance
- * @param {CursorTracker} cursorTracker - Cursor tracker for recording positions
- * @param {number} targetX - Target X coordinate
- * @param {number} targetY - Target Y coordinate
- * @param {number} duration - Movement duration in milliseconds
- * @returns {Promise<void>}
- * @private
+ * Identify logical sections of the page
  */
-async function smoothMoveCursor(page, cursorTracker, targetX, targetY, duration) {
-  const steps = 30;
-  const startX = cursorTracker.positions[cursorTracker.positions.length - 1]?.x || 0;
-  const startY = cursorTracker.positions[cursorTracker.positions.length - 1]?.y || 0;
+function identifySections(pageInfo, viewportHeight) {
+  const allElements = [...pageInfo.buttons, ...pageInfo.cards];
+  const sections = [];
+  const sectionHeight = viewportHeight * 0.9;
+  const numSections = Math.ceil(pageInfo.pageHeight / sectionHeight);
+  
+  for (let i = 0; i < Math.min(numSections, 6); i++) {
+    const top = i * sectionHeight;
+    const bottom = top + sectionHeight;
+    
+    const sectionElements = allElements.filter(el => 
+      el.y >= top && el.y < bottom
+    );
+    
+    if (sectionElements.length === 0 && i > 0) continue;
+    
+    // Determine section type from elements
+    const sectionTypes = sectionElements.map(e => e.section);
+    const dominantType = sectionTypes.sort((a, b) =>
+      sectionTypes.filter(t => t === b).length - sectionTypes.filter(t => t === a).length
+    )[0] || 'content';
+    
+    sections.push({
+      index: i,
+      scrollY: Math.max(0, top - 50),
+      type: dominantType,
+      elements: sectionElements
+    });
+  }
+  
+  return sections;
+}
+
+/**
+ * Prioritize elements based on importance and context
+ */
+function prioritizeElements(elements, visited, sectionType) {
+  return elements
+    .filter(el => !visited.has(elementKey(el)))
+    .sort((a, b) => {
+      let scoreA = 0, scoreB = 0;
+      
+      // High importance bonus
+      if (a.importance === 'high') scoreA += 5;
+      if (b.importance === 'high') scoreB += 5;
+      if (a.importance === 'medium') scoreA += 2;
+      if (b.importance === 'medium') scoreB += 2;
+      
+      // Button bonus
+      if (a.isButton) scoreA += 2;
+      if (b.isButton) scoreB += 2;
+      
+      // Size bonus (bigger = more visible)
+      scoreA += Math.min(2, (a.width * a.height) / 10000);
+      scoreB += Math.min(2, (b.width * b.height) / 10000);
+      
+      // Section relevance bonus
+      if (sectionType === 'pricing' && a.text?.toLowerCase().includes('plan')) scoreA += 3;
+      if (sectionType === 'pricing' && b.text?.toLowerCase().includes('plan')) scoreB += 3;
+      
+      return scoreB - scoreA;
+    });
+}
+
+/**
+ * Generate unique key for element
+ */
+function elementKey(el) {
+  return `${Math.round(el.x)},${Math.round(el.y)}`;
+}
+
+/**
+ * Scan an area with natural reading-like movement
+ */
+async function scanArea(page, cursorTracker, { startX, startY, endX, endY, duration }) {
+  const steps = Math.ceil(duration / 150);
+  const stepX = (endX - startX) / steps;
+  const stepY = (endY - startY) / steps;
+  
+  let x = startX, y = startY;
+  for (let i = 0; i <= steps; i++) {
+    x = startX + stepX * i + (Math.random() - 0.5) * 30;
+    y = startY + stepY * i + (Math.random() - 0.5) * 15;
+    
+    cursorTracker.record(x, y, Date.now());
+    await page.mouse.move(x, y);
+    await sleep(duration / steps);
+  }
+}
+
+/**
+ * Natural cursor movement with bezier easing
+ */
+async function naturalMoveCursor(page, cursorTracker, targetX, targetY, duration) {
+  const positions = cursorTracker.positions;
+  const startX = positions.length > 0 ? positions[positions.length - 1].x : 0;
+  const startY = positions.length > 0 ? positions[positions.length - 1].y : 0;
+  
+  // Control point for curve
+  const midX = (startX + targetX) / 2 + (Math.random() - 0.5) * 50;
+  const midY = (startY + targetY) / 2 + (Math.random() - 0.5) * 30;
+  
+  const steps = Math.ceil(duration / 16);
   
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     // Ease out cubic
     const eased = 1 - Math.pow(1 - t, 3);
     
-    const x = startX + (targetX - startX) * eased;
-    const y = startY + (targetY - startY) * eased;
+    // Quadratic bezier
+    const x = Math.pow(1 - eased, 2) * startX + 
+              2 * (1 - eased) * eased * midX + 
+              Math.pow(eased, 2) * targetX;
+    const y = Math.pow(1 - eased, 2) * startY + 
+              2 * (1 - eased) * eased * midY + 
+              Math.pow(eased, 2) * targetY;
     
     cursorTracker.record(x, y, Date.now());
-    
     await page.mouse.move(x, y);
     await sleep(duration / steps);
   }
 }
+
+/**
+ * Smooth scroll to position
+ */
+async function smoothScrollTo(page, targetY, duration) {
+  await page.evaluate(({ y, dur }) => {
+    const start = window.scrollY;
+    const startTime = performance.now();
+    
+    return new Promise(resolve => {
+      function step() {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(1, elapsed / dur);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        window.scrollTo(0, start + (y - start) * eased);
+        
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          resolve();
+        }
+      }
+      step();
+    });
+  }, { y: targetY, dur: duration });
+  
+  await sleep(duration + 100);
+}
+
+// Keep the old section for backwards compatibility
+const __legacyPageInfo = () => ({
+  pageHeight: 0,
+  viewportHeight: 0,
+  buttons: [],
+  features: [],
+  inputs: []
+});
 
 /**
  * Execute a scripted action during recording.
@@ -463,7 +638,7 @@ async function executeAction(page, action, cursorTracker) {
       if (clickEl) {
         const box = await clickEl.boundingBox();
         if (box) {
-          await smoothMoveCursor(page, cursorTracker, 
+          await naturalMoveCursor(page, cursorTracker, 
             box.x + box.width / 2, 
             box.y + box.height / 2, 
             300
@@ -476,8 +651,7 @@ async function executeAction(page, action, cursorTracker) {
       break;
 
     case 'scroll':
-      await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'smooth' }), action.y);
-      await sleep(action.wait || 800);
+      await smoothScrollTo(page, action.y, action.wait || 800);
       break;
 
     case 'hover':
@@ -485,7 +659,7 @@ async function executeAction(page, action, cursorTracker) {
       if (hoverEl) {
         const box = await hoverEl.boundingBox();
         if (box) {
-          await smoothMoveCursor(page, cursorTracker,
+          await naturalMoveCursor(page, cursorTracker,
             box.x + box.width / 2,
             box.y + box.height / 2,
             300
@@ -520,3 +694,4 @@ async function executeAction(page, action, cursorTracker) {
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+

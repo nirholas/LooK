@@ -892,3 +892,64 @@ export {
   createChapterMarker,
   createSocialCTA
 } from './lower-thirds.js';
+
+// v2.1 Features - Intelligent Recording
+export {
+  IntelligentRecorder,
+  recordIntelligent
+} from './intelligent-recorder.js';
+
+export {
+  SmartActionExecutor,
+  ActionType,
+  TimingPresets,
+  ActionTemplates
+} from './smart-actions.js';
+// v2.2 Features - Enhanced Demo Quality
+export {
+  generateHumanPath,
+  generateDemoSequence,
+  humanizeCursorData,
+  addIdleMovement
+} from './human-cursor.js';
+
+export {
+  calculateSectionDuration,
+  generatePacingTimeline,
+  syncWithVoiceover,
+  addDramaticPauses,
+  calculateScrollTiming,
+  CONTENT_WEIGHTS
+} from './smart-pacing.js';
+
+export {
+  generateSpotlightOverlay,
+  generateGlowOutline,
+  generateArrowPointer,
+  generateMagnifier,
+  generatePulse,
+  generateCallout
+} from './focus-effects.js';
+
+export {
+  easings,
+  generateFadeTransition,
+  generateSlideTransition,
+  generateZoomTransition,
+  generateBlurTransition,
+  generateWipeTransition,
+  generateMorphTransition,
+  getFFmpegFilter,
+  createTransitionSequence
+} from './transitions.js';
+
+export {
+  optimizeForSpeech,
+  generateWordTimings,
+  generateSSML,
+  splitForMultiVoice,
+  estimateSpeechDuration,
+  generateCaptions,
+  syncVoiceWithActions,
+  suggestBackgroundMusic
+} from './voice-enhancer.js';
