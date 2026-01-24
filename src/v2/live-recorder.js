@@ -6,6 +6,19 @@ import { CursorTracker } from './cursor-tracker.js';
 import { EventEmitter } from 'events';
 
 /**
+ * Check if a display server is available for headed browser mode
+ * @returns {boolean} True if display is available
+ */
+function isDisplayAvailable() {
+  // On non-Linux systems, assume display is available
+  if (process.platform !== 'linux') {
+    return true;
+  }
+  // Check for DISPLAY environment variable (X11) or WAYLAND_DISPLAY
+  return !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+}
+
+/**
  * @typedef {import('../types/options.js').RecordingOptions} RecordingOptions
  * @typedef {import('../types/options.js').ScriptedAction} ScriptedAction
  * @typedef {import('../types/project.js').CursorData} CursorData
@@ -46,16 +59,23 @@ export class LiveRecorder extends EventEmitter {
   constructor(options = {}) {
     super();
     
+    // Auto-detect headless mode: if no display is available, force headless
+    const forceHeadless = !isDisplayAvailable();
+    
     this.options = {
       width: options.width || 1920,
       height: options.height || 1080,
       fps: options.fps || 60,
       previewFps: options.previewFps || 10, // Lower FPS for streaming
       duration: options.duration || 20000,
-      headless: options.headless ?? false, // Default to visible
+      headless: forceHeadless || (options.headless ?? false), // Force headless if no display
       actions: options.actions || null,
       autoDemo: options.autoDemo ?? true
     };
+    
+    if (forceHeadless && options.headless === false) {
+      console.warn('[LiveRecorder] No display detected, forcing headless mode');
+    }
     
     /** @type {RecorderState} */
     this.state = 'idle';

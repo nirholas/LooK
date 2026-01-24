@@ -743,12 +743,20 @@ export async function startServer(options = {}) {
       // Generate session ID
       const sessionId = `live-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       
+      // Auto-detect if we can run headed browser (need display server)
+      const hasDisplay = process.platform !== 'linux' || !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+      const useHeadless = !hasDisplay || (options.headless ?? false);
+      
+      if (!hasDisplay && options.headless === false) {
+        console.warn('[Server] No display detected, forcing headless mode for live recording');
+      }
+      
       // Create live recorder
       const recorder = new LiveRecorder({
         width: options.width || project.settings.width,
         height: options.height || project.settings.height,
         duration: (options.duration || project.settings.duration) * 1000,
-        headless: options.headless ?? false, // Default to visible browser
+        headless: useHeadless, // Auto-detect or use specified value
         previewFps: options.previewFps || 10,
         autoDemo: options.autoDemo ?? true
       });
