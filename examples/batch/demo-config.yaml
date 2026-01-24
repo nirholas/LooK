@@ -1,0 +1,83 @@
+# LooK Batch Processing Configuration
+# =====================================
+# Run with: look batch demo-config.yaml
+# Documentation: https://github.com/nirholas/LooK/blob/main/docs/GETTING_STARTED.md
+
+# Default options applied to all jobs unless overridden
+defaults:
+  # Video duration in seconds
+  duration: 25
+  
+  # Video style: professional, energetic, casual, minimal
+  style: professional
+  
+  # AI voiceover voice: nova, alloy, echo, fable, onyx, shimmer
+  voice: nova
+  
+  # Export preset: youtube, twitter, instagram, tiktok, linkedin
+  preset: youtube
+  
+  # Zoom mode: none, basic, smart, follow
+  zoomMode: smart
+  
+  # Skip voiceover generation (useful for quick previews)
+  skipVoice: false
+  
+  # Skip AI analysis (faster but no smart features)
+  skipAnalysis: false
+
+# Output directory for all generated videos
+outputDir: ./demo-videos
+
+# Parallel processing settings
+concurrency: 2
+
+# Jobs to process
+# Each job requires a 'url' and can override any default option
+jobs:
+  # Example 1: Simple job with just URL
+  - url: https://example.com
+    name: example-homepage
+  
+  # Example 2: Job with custom settings
+  - url: https://github.com
+    name: github-demo
+    options:
+      duration: 30
+      style: energetic
+      zoomMode: follow
+  
+  # Example 3: Social media optimized
+  - url: https://twitter.com
+    name: twitter-demo
+    options:
+      preset: twitter
+      duration: 15
+      skipVoice: true
+  
+  # Example 4: E-commerce product page
+  - url: https://stripe.com
+    name: stripe-demo
+    options:
+      duration: 45
+      voice: alloy
+      style: professional
+  
+  # Example 5: Quick preview without AI
+  - url: https://vercel.com
+    name: vercel-preview
+    options:
+      skipAnalysis: true
+      skipVoice: true
+      duration: 10
+
+# Advanced options (uncomment to use)
+# 
+# Resume from failed job (useful for long batches):
+# resume: true
+#
+# Generate detailed report:
+# report: ./batch-report.json
+#
+# Dry run (show what would be processed):
+# dryRun: true

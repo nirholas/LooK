@@ -9,6 +9,12 @@
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
+  <!-- Global Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p id="loading-message" class="loading-text">Loading...</p>
+  </div>
+
   <div id="app">
     <!-- Header -->
     <header class="header">
@@ -16,7 +22,19 @@
         <h1 class="logo">L<span class="eyes">👀</span>K</h1>
         <span class="tagline">Studio</span>
       </div>
+      <nav class="header-nav">
+        <a href="#editor" class="nav-link active">Editor</a>
+        <a href="#templates" class="nav-link">Templates</a>
+        <a href="#docs" class="nav-link">Docs</a>
+      </nav>
       <div class="header-right">
+        <div class="api-status" id="api-status" title="API Configuration" role="button" tabindex="0">
+          <span class="api-indicator" id="api-indicator"></span>
+          <span class="api-label">API</span>
+        </div>
+        <button id="settings-btn" class="btn btn-icon" title="Settings" aria-label="Settings">
+          ⚙️
+        </button>
         <button id="export-btn" class="btn btn-primary" disabled>
           <span class="icon">✨</span> Export
         </button>
@@ -45,6 +63,9 @@
               </button>
               <button type="button" id="live-record-btn" class="btn btn-secondary btn-large">
                 <span class="icon">🎬</span> Live Record
+              </button>
+              <button type="button" id="import-btn" class="btn btn-secondary btn-large">
+                <span class="icon">📥</span> Import
               </button>
             </div>
           </form>
@@ -151,6 +172,9 @@
                   <button id="generate-markers-btn" class="btn btn-secondary btn-small" title="Create markers from recorded clicks">
                     ✨ Generate from Clicks
                   </button>
+                  <button id="copy-chapters-btn" class="btn btn-secondary btn-small" title="Copy YouTube chapters to clipboard">
+                    📋 Copy YouTube Chapters
+                  </button>
                   <button id="clear-markers-btn" class="btn btn-secondary btn-small btn-danger" title="Remove all markers">
                     🗑️ Clear All
                   </button>
@@ -245,6 +269,198 @@
       </section>
     </main>
 
+    <!-- Templates Page -->
+    <section id="templates-page" class="templates-page hidden">
+      <div class="templates-content">
+        <header class="templates-header">
+          <h2>Demo Templates</h2>
+          <p>Start with a pre-configured template for your use case. Enter your URL and we'll apply the optimal settings.</p>
+        </header>
+        
+        <div class="templates-grid">
+          <div class="template-card" data-template="saas-landing">
+            <div class="template-preview">
+              <span class="template-icon">🚀</span>
+            </div>
+            <div class="template-info">
+              <h3>SaaS Landing</h3>
+              <p>Perfect for product pages, feature tours, and conversion-focused demos.</p>
+              <div class="template-features">
+                <span class="feature-tag">Auto-scroll</span>
+                <span class="feature-tag">CTA Focus</span>
+                <span class="feature-tag">25-30s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="ecommerce">
+            <div class="template-preview">
+              <span class="template-icon">🛒</span>
+            </div>
+            <div class="template-info">
+              <h3>E-Commerce</h3>
+              <p>Showcase products, cart flows, and checkout experiences with engaging zoom.</p>
+              <div class="template-features">
+                <span class="feature-tag">Product Focus</span>
+                <span class="feature-tag">Cart Flow</span>
+                <span class="feature-tag">30-45s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="portfolio">
+            <div class="template-preview">
+              <span class="template-icon">🎨</span>
+            </div>
+            <div class="template-info">
+              <h3>Portfolio</h3>
+              <p>Elegant scrolling through creative work with artistic transitions.</p>
+              <div class="template-features">
+                <span class="feature-tag">Gallery Mode</span>
+                <span class="feature-tag">Smooth Scroll</span>
+                <span class="feature-tag">40-60s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="documentation">
+            <div class="template-preview">
+              <span class="template-icon">📚</span>
+            </div>
+            <div class="template-info">
+              <h3>Documentation</h3>
+              <p>Navigate code examples and API references with clear explanations.</p>
+              <div class="template-features">
+                <span class="feature-tag">Code Highlight</span>
+                <span class="feature-tag">Nav Focus</span>
+                <span class="feature-tag">60-90s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="mobile-app">
+            <div class="template-preview">
+              <span class="template-icon">📱</span>
+            </div>
+            <div class="template-info">
+              <h3>Mobile App</h3>
+              <p>Showcase mobile experiences with device frames and touch interactions.</p>
+              <div class="template-features">
+                <span class="feature-tag">Device Frame</span>
+                <span class="feature-tag">Touch Effects</span>
+                <span class="feature-tag">15-25s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="dashboard">
+            <div class="template-preview">
+              <span class="template-icon">📊</span>
+            </div>
+            <div class="template-info">
+              <h3>Dashboard</h3>
+              <p>Highlight analytics, charts, and data visualization features.</p>
+              <div class="template-features">
+                <span class="feature-tag">Data Focus</span>
+                <span class="feature-tag">Chart Zoom</span>
+                <span class="feature-tag">45-60s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="templates-cta">
+          <button class="btn btn-secondary" onclick="document.querySelector('.nav-link[href=\'#editor\']')?.click()">
+            ← Back to Editor
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Docs Page -->
+    <section id="docs-page" class="docs-page hidden">
+      <div class="docs-layout">
+        <nav class="docs-sidebar">
+          <div class="docs-nav">
+            <h4>Getting Started</h4>
+            <a href="#quick-start" class="docs-link active">Quick Start</a>
+            <a href="#installation" class="docs-link">Installation</a>
+            <a href="#first-demo" class="docs-link">Your First Demo</a>
+            
+            <h4>Features</h4>
+            <a href="#ai-analysis" class="docs-link">AI Analysis</a>
+            <a href="#live-recording" class="docs-link">Live Recording</a>
+            <a href="#auto-zoom" class="docs-link">Smart Zoom</a>
+            <a href="#voiceover" class="docs-link">AI Voiceover</a>
+            
+            <h4>Export & Share</h4>
+            <a href="#export-formats" class="docs-link">Export Formats</a>
+            <a href="#youtube-chapters" class="docs-link">YouTube Chapters</a>
+            
+            <h4>API Reference</h4>
+            <a href="#rest-api" class="docs-link">REST API</a>
+            <a href="#cli" class="docs-link">CLI Commands</a>
+          </div>
+        </nav>
+        
+        <main class="docs-content">
+          <article id="quick-start">
+            <h1>Quick Start</h1>
+            <p>Get started with LooK in under 5 minutes.</p>
+            
+            <h2>1. Enter Your URL</h2>
+            <p>Paste any website URL into the input field. LooK works with any public website.</p>
+            
+            <h2>2. Generate Demo</h2>
+            <p>Click <strong>Generate Demo</strong> and our AI will:</p>
+            <ul>
+              <li>Analyze your website's layout and content</li>
+              <li>Generate a professional voiceover script</li>
+              <li>Record an automated walkthrough with smart zoom</li>
+              <li>Track cursor movements for natural-looking demos</li>
+            </ul>
+            
+            <h2>3. Edit & Export</h2>
+            <p>Fine-tune the script, adjust zoom points, add markers, then export to your preferred platform.</p>
+            
+            <div class="docs-tip">
+              <strong>💡 Pro Tip:</strong> Use <strong>Live Record</strong> mode for full control over the recording process.
+            </div>
+          </article>
+          
+          <article id="ai-analysis" class="hidden">
+            <h1>AI Analysis</h1>
+            <p>LooK uses GPT-4 Vision to understand your website.</p>
+            
+            <h2>What We Analyze</h2>
+            <ul>
+              <li><strong>Layout Structure</strong> - Headers, sections, CTAs</li>
+              <li><strong>Brand Colors</strong> - Automatic theme detection</li>
+              <li><strong>Key Features</strong> - Product highlights and benefits</li>
+              <li><strong>Interactive Elements</strong> - Buttons, forms, navigation</li>
+            </ul>
+            
+            <h2>Script Generation</h2>
+            <p>Based on the analysis, we generate a professional voiceover script that:</p>
+            <ul>
+              <li>Highlights key selling points</li>
+              <li>Maintains a natural speaking rhythm</li>
+              <li>Fits your specified duration</li>
+            </ul>
+          </article>
+        </main>
+      </div>
+      
+      <div class="docs-footer">
+        <button class="btn btn-secondary" onclick="document.querySelector('.nav-link')?.click()">
+          ← Back to Editor
+        </button>
+        <a href="https://github.com/nirholas/LooK/blob/main/docs/GETTING_STARTED.md" target="_blank" class="btn btn-primary">
+          Full Documentation →
+        </a>
+      </div>
+    </section>
+
     <!-- Status bar -->
     <footer class="status-bar">
       <span id="status-message" class="status-message">Ready</span>
@@ -280,6 +496,170 @@
           <button id="start-export" class="btn btn-primary">
             <span class="icon">🎬</span> Export
           </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Import Project</h2>
+          <button class="modal-close" id="import-cancel-btn" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="import-description">Import from a website URL or Git repository to generate a demo video.</p>
+          
+          <div class="form-group">
+            <label for="import-url">URL</label>
+            <input 
+              type="url" 
+              id="import-url" 
+              class="form-input" 
+              placeholder="https://example.com or https://github.com/user/repo"
+              required
+            >
+            <p class="form-hint">Paste a website URL or Git repository URL (GitHub, GitLab, Bitbucket)</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="import-type">Import Type</label>
+            <select id="import-type" class="form-select">
+              <option value="auto">Auto-detect</option>
+              <option value="website">Website</option>
+              <option value="git">Git Repository</option>
+            </select>
+          </div>
+          
+          <div id="import-git-options" class="import-git-options hidden">
+            <div class="form-group">
+              <label for="import-branch">Branch (optional)</label>
+              <input type="text" id="import-branch" class="form-input" placeholder="main">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="import-shallow" checked>
+                <span>Shallow clone (faster)</span>
+              </label>
+            </div>
+          </div>
+          
+          <div id="import-progress-section" class="import-progress-section hidden">
+            <div class="import-progress-header">
+              <span id="import-stage">Starting...</span>
+              <span id="import-percent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div id="import-progress-bar" class="progress-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="import-close-btn">Cancel</button>
+          <button class="btn btn-primary" id="import-start-btn">
+            <span class="icon">📥</span> Start Import
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button class="modal-close" aria-label="Close settings">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-tabs">
+            <button class="settings-tab active" data-tab="api">API Keys</button>
+            <button class="settings-tab" data-tab="preferences">Preferences</button>
+            <button class="settings-tab" data-tab="about">About</button>
+          </div>
+          
+          <div class="settings-content" id="settings-api">
+            <div class="form-group">
+              <label for="openai-key">OpenAI API Key</label>
+              <div class="input-with-action">
+                <input type="password" id="openai-key" placeholder="sk-..." class="form-input">
+                <button class="btn btn-icon" id="toggle-openai-key" aria-label="Toggle OpenAI key visibility">👁️</button>
+              </div>
+              <p class="form-hint">Required for AI analysis and voiceover. <a href="https://platform.openai.com/api-keys" target="_blank">Get your key</a></p>
+            </div>
+            
+            <div class="form-group">
+              <label for="groq-key">Groq API Key (Optional)</label>
+              <div class="input-with-action">
+                <input type="password" id="groq-key" placeholder="gsk_..." class="form-input">
+                <button class="btn btn-icon" id="toggle-groq-key" aria-label="Toggle Groq key visibility">👁️</button>
+              </div>
+              <p class="form-hint">Free tier available for script generation. <a href="https://console.groq.com" target="_blank">Get your key</a></p>
+            </div>
+            
+            <div class="api-status-card">
+              <h4>Connection Status</h4>
+              <div class="status-items">
+                <div class="status-item">
+                  <span class="status-dot" id="status-openai"></span>
+                  <span>OpenAI</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-dot" id="status-groq"></span>
+                  <span>Groq</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-dot" id="status-playwright"></span>
+                  <span>Browser</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-content hidden" id="settings-preferences">
+            <div class="form-group">
+              <label>Theme</label>
+              <select class="form-select" id="theme-select">
+                <option value="dark">Dark</option>
+                <option value="light">Light (Coming Soon)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Default Voice</label>
+              <select class="form-select" id="default-voice">
+                <option value="nova">Nova (Warm)</option>
+                <option value="alloy">Alloy (Neutral)</option>
+                <option value="echo">Echo (Male)</option>
+                <option value="fable">Fable (Expressive)</option>
+                <option value="onyx">Onyx (Deep)</option>
+                <option value="shimmer">Shimmer (Bright)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="auto-save" checked>
+                <span>Auto-save projects</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="settings-content hidden" id="settings-about">
+            <div class="about-card">
+              <h3>L👀K Studio</h3>
+              <p class="version">Version 2.0.0</p>
+              <p>AI-powered product demo video generator. Create stunning demos in seconds.</p>
+              <div class="about-links">
+                <a href="https://github.com/nirholas/LooK" target="_blank">GitHub</a>
+                <a href="https://github.com/nirholas/LooK/issues" target="_blank">Report Issue</a>
+                <a href="https://github.com/nirholas/LooK/blob/main/docs/GETTING_STARTED.md" target="_blank">Documentation</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
+          <button class="btn btn-primary" id="settings-save">Save Settings</button>
         </div>
       </div>
     </div>

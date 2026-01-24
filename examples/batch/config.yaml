@@ -1,0 +1,58 @@
+# LooK Batch Processing Configuration
+# Run with: look batch config.yaml
+#
+# This configuration file allows you to process multiple demos
+# in a single batch operation with shared defaults and per-job overrides.
+
+# Default options applied to all jobs unless overridden
+defaults:
+  duration: 25
+  voice: nova
+  style: professional
+  preset: youtube
+  zoomMode: smart
+  skipVoice: false
+  maxZoom: 1.6
+  cursorStyle: default
+  clickEffect: ripple
+
+# Output directory for all generated videos
+outputDir: ./demos
+
+# Jobs to process - each job generates one demo video
+jobs:
+  # Basic job - just URL, uses all defaults
+  - url: https://example1.com
+    name: example1-demo
+    
+  # Job with custom duration and style
+  - url: https://example2.com
+    name: example2-demo
+    options:
+      duration: 30
+      style: energetic
+      
+  # Job for social media export
+  - url: https://example3.com
+    name: example3-twitter
+    options:
+      preset: twitter
+      duration: 15
+      skipVoice: true
+      
+  # Job with custom cursor and zoom settings
+  - url: https://example4.com
+    name: example4-detailed
+    options:
+      duration: 45
+      maxZoom: 2.0
+      zoomMode: follow
+      cursorStyle: spotlight
+      cursorGlow: true
+      
+  # Silent demo for embedding
+  - url: https://example5.com
+    options:
+      skipVoice: true
+      preset: gif
+      duration: 10

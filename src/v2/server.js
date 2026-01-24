@@ -14,6 +14,7 @@ import { recordBrowser } from './recorder.js';
 import { LiveRecorder } from './live-recorder.js';
 import { AutoZoom } from './auto-zoom.js';
 import { postProcess, combineVideoAudio, exportWithPreset } from './post-process.js';
+import { detectImportType, validateUrl, processImport } from './import.js';
 
 // Active live recording sessions
 const liveSessions = new Map();
@@ -22,6 +23,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Active WebSocket connections
 const clients = new Set();
+
+/**
+ * Format seconds as HH:MM:SS for FFmpeg
+ */
+function formatTimestamp(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 /**
  * Broadcast message to all connected WebSocket clients
@@ -81,10 +92,33 @@ export async function startServer(options = {}) {
   // ============================================================
 
   /**
-   * GET /api/health - Health check
+   * GET /api/health - Health check with diagnostics
    */
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', version: '2.0.0' });
+  app.get('/api/health', async (req, res) => {
+    const checks = {
+      status: 'ok',
+      version: '2.0.0',
+      openai: !!process.env.OPENAI_API_KEY,
+      groq: !!process.env.GROQ_API_KEY,
+      playwright: false,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Quick Playwright check (only if requested)
+    if (req.query.full === 'true') {
+      try {
+        const { chromium } = await import('playwright');
+        const browser = await chromium.launch({ headless: true });
+        await browser.close();
+        checks.playwright = true;
+      } catch (e) {
+        checks.playwrightError = e.message;
+      }
+    } else {
+      checks.playwright = 'not-checked';
+    }
+    
+    res.json(checks);
   });
 
   /**
@@ -124,6 +158,81 @@ export async function startServer(options = {}) {
     }
   });
 
+  // ============================================================
+  // Import API - Import projects from URL or Git repository
+  // ============================================================
+
+  /**
+   * POST /api/import - Import a project from URL or Git repository
+   * 
+   * Body:
+   * - url: string (required) - Website URL or Git repo URL
+   * - type: 'website' | 'git' | 'auto' (default: 'auto')
+   * - options: object - Additional options
+   */
+  app.post('/api/import', async (req, res) => {
+    const { url, type = 'auto', options = {} } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+    
+    // Validate URL
+    try {
+      validateUrl(url);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    
+    // Auto-detect type
+    let importType = type;
+    if (type === 'auto') {
+      importType = detectImportType(url);
+    }
+    
+    try {
+      // Create project
+      const project = new Project();
+      project.url = url;
+      project.importType = importType;
+      project.importStatus = 'pending';
+      await project.save();
+      
+      // Start async import (don't await)
+      processImport(project.id, url, importType, options, broadcast).catch(err => {
+        console.error('Import failed:', err);
+      });
+      
+      res.json({
+        projectId: project.id,
+        status: 'pending',
+        importType,
+        message: `Importing ${importType} project...`
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/import/:projectId/status - Get import status
+   */
+  app.get('/api/import/:projectId/status', async (req, res) => {
+    try {
+      const project = await Project.load(req.params.projectId);
+      res.json({
+        projectId: project.id,
+        status: project.importStatus || 'unknown',
+        progress: project.importProgress || 0,
+        error: project.importError,
+        analysis: project.analysis,
+        hasScript: !!project.script
+      });
+    } catch (error) {
+      res.status(404).json({ error: 'Project not found' });
+    }
+  });
+
   /**
    * POST /api/analyze - Analyze a URL and return analysis + script
    */
@@ -133,6 +242,7 @@ export async function startServer(options = {}) {
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
+
 
     broadcast('status', { stage: 'analyzing', message: 'Analyzing website...' });
 
@@ -297,7 +407,13 @@ export async function startServer(options = {}) {
    * - Stop early or let it run for the full duration
    */
   app.post('/api/live/start', async (req, res) => {
-    const { projectId, url, options = {} } = req.body;
+    let { projectId, url, options = {} } = req.body;
+
+    // Smart detection: if projectId looks like a URL, treat it as url
+    if (projectId && !url && /^https?:\/\//i.test(projectId)) {
+      url = projectId;
+      projectId = null;
+    }
 
     let project;
     
@@ -634,6 +750,71 @@ export async function startServer(options = {}) {
     }
   });
 
+  // ============================================================
+  // Markers API - Timeline markers and YouTube chapters
+  // ============================================================
+
+  /**
+   * GET /api/project/:id/markers - Get project markers
+   */
+  app.get('/api/project/:id/markers', async (req, res) => {
+    try {
+      const project = await Project.load(req.params.id);
+      res.json({
+        markers: project.timeline?.markers || [],
+        duration: project.timeline?.duration || 0
+      });
+    } catch (error) {
+      res.status(404).json({ error: 'Project not found' });
+    }
+  });
+
+  /**
+   * PUT /api/project/:id/markers - Update project markers
+   */
+  app.put('/api/project/:id/markers', async (req, res) => {
+    try {
+      const project = await Project.load(req.params.id);
+      project.timeline = project.timeline || {};
+      project.timeline.markers = req.body.markers || [];
+      await project.save();
+      res.json({ success: true, markers: project.timeline.markers });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/project/:id/chapters - Export markers as YouTube chapters format
+   */
+  app.get('/api/project/:id/chapters', async (req, res) => {
+    try {
+      const project = await Project.load(req.params.id);
+      const { generateYouTubeChapters, MarkerType } = await import('./markers.js');
+      
+      const markers = (project.timeline?.markers || []).map(m => ({
+        time: m.time,
+        label: m.label,
+        type: m.type || MarkerType.CHAPTER
+      }));
+      
+      const chapters = generateYouTubeChapters(markers);
+      
+      // Return as plain text or JSON based on Accept header
+      if (req.accepts('text/plain')) {
+        res.type('text/plain').send(chapters);
+      } else {
+        res.json({ 
+          chapters,
+          markers: markers.length,
+          format: 'youtube'
+        });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   /**
    * POST /api/render - Render final video with effects
    */
@@ -783,6 +964,50 @@ export async function startServer(options = {}) {
 
     } catch (error) {
       res.status(404).json({ error: 'Video not found' });
+    }
+  });
+
+  /**
+   * GET /api/project/:id/thumbnail - Generate and return a thumbnail from the video
+   * Query params:
+   * - timestamp: time in seconds (default: 2)
+   * - preset: youtube, twitter, instagram, og, square (default: youtube)
+   */
+  app.get('/api/project/:id/thumbnail', async (req, res) => {
+    try {
+      const project = await Project.load(req.params.id);
+      
+      if (!project.rawVideo) {
+        return res.status(404).json({ error: 'No video available for thumbnail' });
+      }
+      
+      const { extractFrame, THUMBNAIL_PRESETS } = await import('./thumbnail.js');
+      
+      const timestamp = req.query.timestamp || '2';
+      const preset = req.query.preset || 'youtube';
+      const dimensions = THUMBNAIL_PRESETS[preset] || THUMBNAIL_PRESETS.youtube;
+      
+      const projectDir = project.getProjectDir();
+      const thumbnailPath = join(projectDir, `thumbnail-${preset}-${Date.now()}.jpg`);
+      
+      await extractFrame(project.rawVideo, thumbnailPath, {
+        timestamp: typeof timestamp === 'number' ? formatTimestamp(timestamp) : timestamp,
+        width: dimensions.width,
+        height: dimensions.height,
+        quality: 2
+      });
+      
+      const thumbStat = await stat(thumbnailPath);
+      res.writeHead(200, {
+        'Content-Length': thumbStat.size,
+        'Content-Type': 'image/jpeg',
+        'Content-Disposition': `inline; filename="thumbnail-${project.id.slice(0, 8)}.jpg"`
+      });
+      createReadStream(thumbnailPath).pipe(res);
+      
+    } catch (error) {
+      console.error('Thumbnail generation failed:', error);
+      res.status(500).json({ error: 'Failed to generate thumbnail: ' + error.message });
     }
   });
 

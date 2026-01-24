@@ -9,6 +9,9 @@ import { KeyboardShortcuts } from './keyboard.js';
 import { Timeline } from './timeline.js';
 import { AutoSave } from './autosave.js';
 import { LivePreview } from './live-preview.js';
+import { Onboarding } from './onboarding.js';
+import { SettingsManager } from './settings.js';
+import { handleError } from './error-boundary.js';
 
 class LookEditor {
   constructor() {
@@ -18,16 +21,33 @@ class LookEditor {
     this.liveSessionId = null;
     this.isLiveRecording = false;
     this.ws = null;
+    this.reconnectAttempts = 0;
     this.keyboard = null;
     this.timeline = null;
     this.autoSave = null;
     this.isFullscreen = false;
+    this.wsReconnectAttempts = 0;
+    this.wsMaxReconnectDelay = 30000; // 30 seconds max
     
     this.elements = {
       // Start screen
       startScreen: document.getElementById('start-screen'),
       analyzeForm: document.getElementById('analyze-form'),
       urlInput: document.getElementById('url-input'),
+      importBtn: document.getElementById('import-btn'),
+      importModal: document.getElementById('import-modal'),
+      importUrlInput: document.getElementById('import-url'),
+      importTypeSelect: document.getElementById('import-type'),
+      importStartBtn: document.getElementById('import-start-btn'),
+      importCancelBtn: document.getElementById('import-cancel-btn'),
+      importCloseBtn: document.getElementById('import-close-btn'),
+      importBranch: document.getElementById('import-branch'),
+      importShallow: document.getElementById('import-shallow'),
+      importGitOptions: document.getElementById('import-git-options'),
+      importProgressSection: document.getElementById('import-progress-section'),
+      importProgressBar: document.getElementById('import-progress-bar'),
+      importStage: document.getElementById('import-stage'),
+      importPercent: document.getElementById('import-percent'),
       projectsList: document.getElementById('projects-list'),
       dropZone: document.getElementById('drop-zone'),
       liveRecordBtn: document.getElementById('live-record-btn'),
@@ -113,11 +133,26 @@ class LookEditor {
   
   async init() {
     this.setupEventListeners();
+    this.setupAccessibility();
     this.setupDragAndDrop();
     this.setupKeyboardShortcuts();
     this.setupAutoSave();
     this.connectWebSocket();
     await this.loadRecentProjects();
+    // Initialize settings manager and onboarding experience
+    try {
+      this.settingsManager = new SettingsManager(this);
+      this.settingsManager.init();
+    } catch (e) {
+      console.warn('Settings manager failed to initialize', e);
+    }
+
+    try {
+      this.onboarding = new Onboarding();
+      this.onboarding.start();
+    } catch (e) {
+      console.warn('Onboarding failed to start', e);
+    }
     
     // Check for project ID in URL hash
     const hash = window.location.hash.slice(1);
@@ -198,6 +233,25 @@ class LookEditor {
         this.showStartScreen();
       }
     });
+
+    // Import button / modal
+    this.elements.importBtn?.addEventListener('click', () => this.showImportModal());
+    this.elements.importStartBtn?.addEventListener('click', () => this.startImport());
+    this.elements.importCancelBtn?.addEventListener('click', () => this.hideImportModal());
+    this.elements.importCloseBtn?.addEventListener('click', () => this.hideImportModal());
+    
+    // Show/hide git options based on import type
+    this.elements.importTypeSelect?.addEventListener('change', (e) => {
+      const isGit = e.target.value === 'git';
+      this.elements.importGitOptions?.classList.toggle('hidden', !isGit);
+    });
+    
+    // Close import modal on backdrop click
+    this.elements.importModal?.addEventListener('click', (e) => {
+      if (e.target === this.elements.importModal) {
+        this.hideImportModal();
+      }
+    });
     
     // Video controls
     this.elements.playBtn?.addEventListener('click', () => this.togglePlayback());
@@ -247,8 +301,19 @@ class LookEditor {
     
     // Export
     this.elements.exportBtn?.addEventListener('click', () => this.showExportModal());
-    this.elements.cancelExport?.addEventListener('click', () => this.hideExportModal());
+    this.elements.cancelExport?.addEventListener('click', () => this.cancelExport());
     this.elements.startExport?.addEventListener('click', () => this.startExport());
+    
+    // Navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const text = link.textContent.trim().toLowerCase();
+        if (text === 'templates') this.showTemplatesPage();
+        else if (text === 'docs') this.showDocsPage();
+        else this.showEditorPage();
+      });
+    });
     
     // Close modal on backdrop click
     this.elements.exportModal?.addEventListener('click', (e) => {
@@ -267,6 +332,39 @@ class LookEditor {
     this.elements.addMarkerBtn?.addEventListener('click', () => this.addMarkerAtCurrentTime());
     this.elements.generateMarkersBtn?.addEventListener('click', () => this.generateMarkersFromClicks());
     this.elements.clearMarkersBtn?.addEventListener('click', () => this.clearAllMarkers());
+    
+    // Copy YouTube chapters button
+    this.elements.copyChaptersBtn = document.getElementById('copy-chapters-btn');
+    this.elements.copyChaptersBtn?.addEventListener('click', () => this.copyYouTubeChapters());
+  }
+
+  setupAccessibility() {
+    // Skip link
+    const skipLink = document.createElement('a');
+    skipLink.href = '#main-content';
+    skipLink.className = 'skip-link';
+    skipLink.textContent = 'Skip to main content';
+    document.body.prepend(skipLink);
+
+    // Role and aria attributes
+    document.querySelector('.header')?.setAttribute('role', 'banner');
+    document.querySelector('.main')?.setAttribute('role', 'main');
+    document.querySelector('.main')?.setAttribute('id', 'main-content');
+    document.querySelector('.sidebar')?.setAttribute('role', 'complementary');
+
+    // Make buttons accessible
+    document.querySelectorAll('button').forEach(btn => {
+      if (!btn.getAttribute('aria-label') && !btn.textContent.trim()) {
+        btn.setAttribute('aria-label', btn.title || 'Button');
+      }
+    });
+
+    // Announce region
+    this.statusRegion = document.createElement('div');
+    this.statusRegion.setAttribute('role', 'status');
+    this.statusRegion.setAttribute('aria-live', 'polite');
+    this.statusRegion.className = 'sr-only';
+    document.body.appendChild(this.statusRegion);
   }
   
   // Tab switching
@@ -352,6 +450,381 @@ class LookEditor {
     }
   }
   
+  // Page navigation
+  showEditorPage() {
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('.nav-link[href="#editor"]')?.classList.add('active');
+    
+    document.getElementById('templates-page')?.classList.add('hidden');
+    document.getElementById('docs-page')?.classList.add('hidden');
+    document.querySelector('.main')?.classList.remove('hidden');
+    document.querySelector('.sidebar')?.classList.remove('hidden');
+  }
+  
+  showTemplatesPage() {
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('.nav-link[href="#templates"]')?.classList.add('active');
+    
+    document.querySelector('.main')?.classList.add('hidden');
+    document.querySelector('.sidebar')?.classList.add('hidden');
+    document.getElementById('docs-page')?.classList.add('hidden');
+    
+    const templatesPage = document.getElementById('templates-page');
+    if (templatesPage) {
+      templatesPage.classList.remove('hidden');
+      this.setupTemplateCards();
+    }
+  }
+  
+  showDocsPage() {
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector('.nav-link[href="#docs"]')?.classList.add('active');
+    
+    document.querySelector('.main')?.classList.add('hidden');
+    document.querySelector('.sidebar')?.classList.add('hidden');
+    document.getElementById('templates-page')?.classList.add('hidden');
+    
+    const docsPage = document.getElementById('docs-page');
+    if (docsPage) {
+      docsPage.classList.remove('hidden');
+      this.setupDocsNavigation();
+    }
+  }
+  
+  setupTemplateCards() {
+    const templateCards = document.querySelectorAll('.template-card');
+    templateCards.forEach(card => {
+      if (card.dataset.bound) return;
+      card.dataset.bound = 'true';
+      
+      card.addEventListener('click', () => {
+        const templateName = card.dataset.template;
+        this.loadTemplate(templateName);
+      });
+    });
+  }
+  
+  async loadTemplate(templateName) {
+    const templateConfigs = {
+      'saas-landing': { 
+        preset: 'saas',
+        settings: {
+          zoom: { mode: 'smart', intensity: 60, speed: 'medium' },
+          cursor: { style: 'pointer', size: 28 },
+          click: { effect: 'ripple', color: '#3B82F6' },
+          duration: 30
+        },
+        description: 'Optimized for product pages with feature highlights and CTAs'
+      },
+      'ecommerce': { 
+        preset: 'ecommerce',
+        settings: {
+          zoom: { mode: 'follow', intensity: 50, speed: 'medium' },
+          cursor: { style: 'pointer', size: 24 },
+          click: { effect: 'pulse', color: '#10B981' },
+          duration: 40
+        },
+        description: 'Perfect for showcasing products and cart experiences'
+      },
+      'portfolio': { 
+        preset: 'portfolio',
+        settings: {
+          zoom: { mode: 'basic', intensity: 40, speed: 'slow' },
+          cursor: { style: 'dot', size: 20 },
+          click: { effect: 'ring', color: '#8B5CF6' },
+          duration: 50
+        },
+        description: 'Elegant scrolling through creative work'
+      },
+      'documentation': { 
+        preset: 'docs',
+        settings: {
+          zoom: { mode: 'smart', intensity: 70, speed: 'medium' },
+          cursor: { style: 'default', size: 24 },
+          click: { effect: 'spotlight', color: '#F59E0B' },
+          duration: 60
+        },
+        description: 'Clear navigation of code examples and references'
+      },
+      'mobile-app': { 
+        preset: 'mobile',
+        settings: {
+          zoom: { mode: 'follow', intensity: 80, speed: 'fast' },
+          cursor: { style: 'circle', size: 32 },
+          click: { effect: 'ripple', color: '#EC4899' },
+          duration: 20,
+          deviceFrame: true
+        },
+        description: 'Mobile experiences with touch-friendly interactions'
+      },
+      'dashboard': { 
+        preset: 'dashboard',
+        settings: {
+          zoom: { mode: 'smart', intensity: 55, speed: 'medium' },
+          cursor: { style: 'pointer', size: 24 },
+          click: { effect: 'pulse', color: '#06B6D4' },
+          duration: 45
+        },
+        description: 'Highlight analytics and data visualizations'
+      }
+    };
+    
+    const config = templateConfigs[templateName];
+    if (!config) {
+      toast.error('Template not found');
+      return;
+    }
+    
+    // Apply template settings to UI
+    const { settings } = config;
+    
+    // Zoom settings
+    if (this.elements.zoomMode && settings.zoom) {
+      this.elements.zoomMode.value = settings.zoom.mode;
+    }
+    if (this.elements.zoomIntensity && settings.zoom) {
+      this.elements.zoomIntensity.value = settings.zoom.intensity;
+    }
+    if (this.elements.zoomSpeed && settings.zoom) {
+      this.elements.zoomSpeed.value = settings.zoom.speed;
+    }
+    
+    // Cursor settings
+    if (this.elements.cursorStyle && settings.cursor) {
+      this.elements.cursorStyle.value = settings.cursor.style;
+    }
+    if (this.elements.cursorSize && settings.cursor) {
+      this.elements.cursorSize.value = settings.cursor.size;
+    }
+    
+    // Click effect settings
+    if (this.elements.clickEffect && settings.click) {
+      this.elements.clickEffect.value = settings.click.effect;
+    }
+    if (this.elements.clickColor && settings.click) {
+      this.elements.clickColor.value = settings.click.color;
+    }
+    
+    // Store template for later use
+    this.currentTemplate = { name: templateName, ...config };
+    
+    // Switch to editor
+    this.showEditorPage();
+    
+    // Show detailed toast
+    toast.success(`${templateName.replace('-', ' ')} template applied!`);
+    toast.info(config.description, 5000);
+    this.elements.urlInput?.focus();
+  }
+  
+  setupDocsNavigation() {
+    // Support both .docs-nav-item and .docs-link selectors
+    const navItems = document.querySelectorAll('.docs-nav-item, .docs-link');
+    navItems.forEach(item => {
+      if (item.dataset.bound) return;
+      item.dataset.bound = 'true';
+      
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        navItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        // Support both data-doc and href attributes
+        const docId = item.dataset.doc || item.getAttribute('href')?.replace('#', '');
+        if (docId) this.loadDocContent(docId);
+      });
+    });
+  }
+  
+  loadDocContent(docId) {
+    const docsContent = {
+      'quickstart': this.getQuickStartDoc(),
+      'installation': this.getInstallationDoc(),
+      'api-keys': this.getApiKeysDoc(),
+      'recording': this.getRecordingDoc(),
+      'live-recording': this.getLiveRecordingDoc(),
+      'voiceover': this.getVoiceoverDoc(),
+      'export': this.getExportDoc(),
+      'cli': this.getCliDoc(),
+      'api': this.getApiDoc(),
+      'customization': this.getCustomizationDoc()
+    };
+    
+    const content = docsContent[docId] || '<h1>Document not found</h1>';
+    const docsContentEl = document.getElementById('docs-content');
+    if (docsContentEl) {
+      docsContentEl.innerHTML = content;
+    }
+  }
+  
+  getQuickStartDoc() {
+    return `
+      <h1>Quick Start</h1>
+      <p>Get started with L👀K in just a few minutes.</p>
+      <h2>1. Enter a URL</h2>
+      <p>Paste any website URL in the input field. L👀K will analyze the page structure.</p>
+      <h2>2. Generate or Record</h2>
+      <p><strong>Generate Demo</strong> - Let AI automatically create a professional demo.</p>
+      <p><strong>Live Record</strong> - Take manual control and record your own demo.</p>
+      <h2>3. Edit & Customize</h2>
+      <p>Edit voiceover, add markers, adjust zoom and cursor style.</p>
+      <h2>4. Export</h2>
+      <p>Export optimized for YouTube, Twitter, Instagram, or TikTok.</p>
+    `;
+  }
+  
+  getInstallationDoc() {
+    return `
+      <h1>Installation</h1>
+      <h2>Docker (Recommended)</h2>
+      <pre><code>docker run -p 3000:3000 ghcr.io/nirholas/look:latest</code></pre>
+      <h2>NPM</h2>
+      <pre><code>npm install -g @nirholas/look
+look serve</code></pre>
+      <h2>From Source</h2>
+      <pre><code>git clone https://github.com/nirholas/LooK
+cd LooK && npm install
+npm run start</code></pre>
+    `;
+  }
+  
+  getApiKeysDoc() {
+    return `
+      <h1>API Keys Setup</h1>
+      <p>L👀K uses AI for intelligent analysis and voiceover generation.</p>
+      <h2>OpenAI API Key</h2>
+      <p>Required for GPT-4 Vision analysis and voiceover script generation.</p>
+      <ol>
+        <li>Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a></li>
+        <li>Create an API key</li>
+        <li>Add it in Settings → API Keys</li>
+      </ol>
+      <h2>Groq API Key (Optional)</h2>
+      <p>Alternative for faster inference with Llama models.</p>
+    `;
+  }
+  
+  getRecordingDoc() {
+    return `
+      <h1>Recording</h1>
+      <p>L👀K offers two recording modes:</p>
+      <h2>AI-Generated Demo</h2>
+      <p>Click "Generate Demo" to let AI analyze your site and create an optimized demo automatically.</p>
+      <h2>Manual Recording</h2>
+      <p>Use "Live Record" for full control over every interaction.</p>
+      <h2>Recording Settings</h2>
+      <ul>
+        <li><strong>Resolution</strong> - 1080p or 4K output</li>
+        <li><strong>Framerate</strong> - 30 or 60 FPS</li>
+        <li><strong>Duration</strong> - Auto or custom length</li>
+      </ul>
+    `;
+  }
+  
+  getLiveRecordingDoc() {
+    return `
+      <h1>Live Recording</h1>
+      <p>Live recording gives you complete control over your demo.</p>
+      <h2>Controls</h2>
+      <ul>
+        <li><strong>Start/Stop</strong> - Begin and end recording</li>
+        <li><strong>Pause</strong> - Temporarily pause without stopping</li>
+        <li><strong>Screenshot</strong> - Capture current frame</li>
+      </ul>
+      <h2>Tips</h2>
+      <ul>
+        <li>Use smooth, deliberate mouse movements</li>
+        <li>Pause between actions for clarity</li>
+        <li>Add markers for chapter points</li>
+      </ul>
+    `;
+  }
+  
+  getVoiceoverDoc() {
+    return `
+      <h1>AI Voiceover</h1>
+      <p>Automatically generate professional voiceovers for your demos.</p>
+      <h2>Script Generation</h2>
+      <p>AI analyzes your recording and generates a natural script that explains each action.</p>
+      <h2>Voice Options</h2>
+      <ul>
+        <li><strong>alloy</strong> - Neutral, professional</li>
+        <li><strong>echo</strong> - Warm, conversational</li>
+        <li><strong>fable</strong> - Expressive, dynamic</li>
+        <li><strong>onyx</strong> - Deep, authoritative</li>
+        <li><strong>nova</strong> - Bright, energetic</li>
+        <li><strong>shimmer</strong> - Soft, calming</li>
+      </ul>
+    `;
+  }
+  
+  getExportDoc() {
+    return `
+      <h1>Exporting</h1>
+      <h2>Export Formats</h2>
+      <table>
+        <tr><th>Platform</th><th>Resolution</th><th>Format</th></tr>
+        <tr><td>YouTube</td><td>1920×1080</td><td>MP4 H.264</td></tr>
+        <tr><td>Twitter</td><td>1280×720</td><td>MP4 H.264</td></tr>
+        <tr><td>Instagram</td><td>1080×1080</td><td>MP4 H.264</td></tr>
+        <tr><td>TikTok</td><td>1080×1920</td><td>MP4 H.264</td></tr>
+      </table>
+      <h2>Quality Settings</h2>
+      <p>Choose between speed and quality for your export.</p>
+    `;
+  }
+  
+  getCliDoc() {
+    return `
+      <h1>CLI Reference</h1>
+      <h2>Commands</h2>
+      <pre><code>look record &lt;url&gt;       # Record a demo
+look analyze &lt;url&gt;      # Analyze a website
+look render &lt;project&gt;   # Render a project
+look serve              # Start the web UI</code></pre>
+      <h2>Options</h2>
+      <pre><code>--output, -o    Output file path
+--format, -f    Output format (mp4, webm, gif)
+--quality, -q   Quality preset (draft, normal, high)
+--voice, -v     Voice for narration</code></pre>
+    `;
+  }
+  
+  getApiDoc() {
+    return `
+      <h1>REST API</h1>
+      <h2>Endpoints</h2>
+      <h3>POST /api/analyze</h3>
+      <p>Analyze a website URL</p>
+      <pre><code>{ "url": "https://example.com" }</code></pre>
+      <h3>POST /api/record</h3>
+      <p>Start recording a demo</p>
+      <h3>POST /api/render</h3>
+      <p>Render a recorded project</p>
+      <h3>GET /api/projects</h3>
+      <p>List all projects</p>
+    `;
+  }
+  
+  getCustomizationDoc() {
+    return `
+      <h1>Customization</h1>
+      <h2>Cursor Styles</h2>
+      <ul>
+        <li>Default system cursor</li>
+        <li>Custom pointer with trail</li>
+        <li>Highlight ring on click</li>
+      </ul>
+      <h2>Click Effects</h2>
+      <ul>
+        <li>Ripple animation</li>
+        <li>Pulse effect</li>
+        <li>None</li>
+      </ul>
+      <h2>Zoom</h2>
+      <p>Auto-zoom focuses on interactive elements during the demo.</p>
+    `;
+  }
+  
   // Volume
   toggleMute() {
     const video = this.elements.previewVideo;
@@ -409,26 +882,31 @@ class LookEditor {
   }
   
   connectWebSocket() {
-    const wsUrl = `ws://${window.location.host}`;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}`;
     this.ws = new WebSocket(wsUrl);
-    
+
     this.ws.onopen = () => {
       console.log('WebSocket connected');
-      toast.info('Connected to server');
+      this.reconnectAttempts = 0;
+      toast.success('Connected to server');
     };
-    
+
     this.ws.onmessage = (event) => {
       const { type, data } = JSON.parse(event.data);
       this.handleWebSocketMessage(type, data);
     };
-    
+
     this.ws.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting...');
-      setTimeout(() => this.connectWebSocket(), 3000);
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts || 0), 30000);
+      this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+      console.log(`WebSocket disconnected, reconnecting in ${delay}ms...`);
+      setTimeout(() => this.connectWebSocket(), delay);
     };
-    
-    this.ws.onerror = () => {
-      toast.warning('Connection lost, reconnecting...');
+
+    this.ws.onerror = (e) => {
+      console.warn('WebSocket error', e);
+      toast.warning('Connection lost, attempting to reconnect...');
     };
   }
   
@@ -546,23 +1024,182 @@ class LookEditor {
   async analyzeUrl(url) {
     this.setStatus('Analyzing website...', 'loading');
     this.showProgress();
+    this.showLoading('Analyzing website...');
+    this.announce('Analyzing website, please wait');
     
     try {
+      this.updateLoadingMessage('Running AI analysis...');
       const result = await API.analyze(url);
       this.currentProject = result;
       
       this.setStatus('Analysis complete! Starting recording...');
+      this.updateLoadingMessage('Starting recording...');
       
       // Start recording
       const recordResult = await API.record(result.projectId);
       
       // Load the full project
+      this.updateLoadingMessage('Loading project...');
       await this.loadProject(result.projectId);
       
+      this.hideLoading();
+      this.announce('Recording complete');
+      
     } catch (error) {
-      this.setStatus(`Error: ${error.message}`, 'error');
+      const userMessage = handleError(error, 'Analyze URL');
+      this.setStatus(`Error: ${userMessage}`, 'error');
+      toast.error(userMessage);
       this.hideProgress();
+      this.hideLoading();
+      this.announce(`Error: ${userMessage}`);
     }
+  }
+
+  // ================= Importing Projects =================
+
+  showImportModal() {
+    const modal = this.elements.importModal;
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    // Reset form state
+    if (this.elements.importUrlInput) {
+      this.elements.importUrlInput.value = '';
+      this.elements.importUrlInput.focus();
+    }
+    if (this.elements.importTypeSelect) {
+      this.elements.importTypeSelect.value = 'auto';
+    }
+    this.elements.importProgressSection?.classList.add('hidden');
+    this.elements.importGitOptions?.classList.add('hidden');
+    if (this.elements.importStartBtn) {
+      this.elements.importStartBtn.disabled = false;
+    }
+  }
+
+  hideImportModal() {
+    const modal = this.elements.importModal;
+    if (!modal) return;
+    modal.classList.add('hidden');
+    this.elements.importProgressSection?.classList.add('hidden');
+  }
+
+  updateImportProgress(progress, stage) {
+    if (this.elements.importProgressBar) {
+      this.elements.importProgressBar.style.width = `${progress}%`;
+    }
+    if (this.elements.importPercent) {
+      this.elements.importPercent.textContent = `${progress}%`;
+    }
+    if (this.elements.importStage) {
+      const stageLabels = {
+        'cloning': 'Cloning repository...',
+        'analyzing': 'Analyzing project...',
+        'generating': 'Generating analysis...',
+        'scripting': 'Creating demo script...',
+        'loading': 'Loading website...',
+        'capturing': 'Capturing screenshot...',
+        'processing': 'Processing...'
+      };
+      this.elements.importStage.textContent = stageLabels[stage] || stage || 'Processing...';
+    }
+  }
+
+  async startImport() {
+    const url = this.elements.importUrlInput?.value?.trim();
+    const type = this.elements.importTypeSelect?.value || 'auto';
+
+    if (!url) { 
+      toast.error('Please enter a URL'); 
+      return; 
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      toast.error('Please enter a valid URL');
+      return;
+    }
+
+    // Show progress section
+    this.elements.importProgressSection?.classList.remove('hidden');
+    this.updateImportProgress(0, 'processing');
+    
+    // Disable start button
+    if (this.elements.importStartBtn) {
+      this.elements.importStartBtn.disabled = true;
+    }
+
+    this.setStatus('Starting import...');
+    this.showProgress();
+
+    try {
+      // Build options
+      const options = { type };
+      if (type === 'git') {
+        options.branch = this.elements.importBranch?.value || undefined;
+        options.shallow = this.elements.importShallow?.checked !== false;
+      }
+
+      const result = await API.importProject(url, options);
+      this.currentProjectId = result.projectId;
+      
+      // Start polling for status
+      this.pollImportStatus(result.projectId);
+    } catch (error) {
+      const userMessage = handleError(error, 'Import');
+      toast.error(userMessage);
+      this.hideProgress();
+      this.elements.importProgressSection?.classList.add('hidden');
+      if (this.elements.importStartBtn) {
+        this.elements.importStartBtn.disabled = false;
+      }
+    }
+  }
+
+  pollImportStatus(projectId) {
+    const poll = async () => {
+      try {
+        const status = await API.getImportStatus(projectId);
+
+        // Update modal progress
+        this.updateImportProgress(status.progress || 0, status.stage);
+        
+        // Update main progress bar
+        this.setProgress(status.progress || 0);
+        this.setStatus(`Importing: ${status.stage || 'processing'}...`);
+
+        if (status.status === 'complete') {
+          toast.success('Import complete!');
+          this.hideImportModal();
+          this.loadProject(projectId);
+          this.hideProgress();
+          return;
+        }
+
+        if (status.status === 'error') {
+          toast.error(`Import failed: ${status.error || 'Unknown error'}`);
+          this.hideProgress();
+          this.elements.importProgressSection?.classList.add('hidden');
+          if (this.elements.importStartBtn) {
+            this.elements.importStartBtn.disabled = false;
+          }
+          return;
+        }
+
+        // Continue polling
+        setTimeout(poll, 1000);
+      } catch (err) {
+        toast.error('Lost connection to import process');
+        this.hideProgress();
+        this.elements.importProgressSection?.classList.add('hidden');
+        if (this.elements.importStartBtn) {
+          this.elements.importStartBtn.disabled = false;
+        }
+      }
+    };
+
+    poll();
   }
   
   async loadProject(projectId) {
@@ -620,6 +1257,35 @@ class LookEditor {
   showStartScreen() {
     this.elements.editorScreen.classList.add('hidden');
     this.elements.startScreen.classList.remove('hidden');
+  }
+  
+  // Loading overlay management
+  showLoading(message = 'Loading...') {
+    const overlay = document.getElementById('loading-overlay');
+    const messageEl = document.getElementById('loading-message');
+    if (overlay) {
+      if (messageEl) messageEl.textContent = message;
+      overlay.classList.remove('hidden');
+    }
+  }
+  
+  hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+    }
+  }
+  
+  updateLoadingMessage(message) {
+    const messageEl = document.getElementById('loading-message');
+    if (messageEl) messageEl.textContent = message;
+  }
+  
+  // Announce for screen readers
+  announce(message) {
+    if (this.statusRegion) {
+      this.statusRegion.textContent = message;
+    }
   }
   
   renderAnalysis(analysis) {
@@ -1004,6 +1670,56 @@ class LookEditor {
     toast.success('All markers cleared');
   }
   
+  /**
+   * Copy YouTube chapters format to clipboard
+   */
+  async copyYouTubeChapters() {
+    const markers = this.currentProject?.markers || [];
+    
+    if (markers.length === 0) {
+      toast.warning('No markers to export. Add markers first.');
+      return;
+    }
+    
+    try {
+      // If we have a project ID, fetch from server (formatted)
+      if (this.currentProject?.id) {
+        const result = await API.getYouTubeChapters(this.currentProject.id);
+        await navigator.clipboard.writeText(result.chapters);
+        toast.success(`Copied ${markers.length} chapters to clipboard!`);
+        return;
+      }
+      
+      // Fallback: format locally
+      const chapters = this.formatYouTubeChapters(markers);
+      await navigator.clipboard.writeText(chapters);
+      toast.success(`Copied ${markers.length} chapters to clipboard!`);
+      
+    } catch (error) {
+      toast.error(`Failed to copy chapters: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Format markers as YouTube chapters (local fallback)
+   * @param {Array} markers - Array of marker objects
+   * @returns {string} YouTube chapters format
+   */
+  formatYouTubeChapters(markers) {
+    const sorted = [...markers].sort((a, b) => a.time - b.time);
+    
+    // YouTube requires first chapter at 0:00
+    if (sorted.length === 0 || sorted[0].time > 0) {
+      sorted.unshift({ time: 0, label: 'Intro' });
+    }
+    
+    return sorted.map(m => {
+      const mins = Math.floor(m.time / 60);
+      const secs = Math.floor(m.time % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')} ${m.label}`;
+    }).join('\n');
+  }
+  
   renderMarkersPanel() {
     if (!this.elements.markersList) return;
     
@@ -1172,28 +1888,67 @@ class LookEditor {
   }
   
   async startExport() {
-    if (!this.currentProject?.id) return;
+    if (!this.currentProject?.id) {
+      toast.error('No project loaded');
+      return;
+    }
     
     const preset = this.elements.exportFormat.value;
     
     this.elements.exportProgress.classList.remove('hidden');
     this.elements.startExport.disabled = true;
+    this.elements.cancelExport.disabled = true;
     this.elements.exportProgressBar.style.width = '0%';
-    this.elements.exportStatus.textContent = 'Starting render...';
+    this.elements.exportStatus.textContent = 'Preparing render...';
+    this._exportCancelled = false;
     
     try {
+      // Start render process
+      this.elements.exportStatus.textContent = 'Rendering video...';
+      
+      // Poll for progress via WebSocket or use the result
       const result = await API.render(this.currentProject.id, preset);
       
-      this.elements.exportStatus.textContent = 'Complete! Downloading...';
+      if (this._exportCancelled) return;
+      
+      // Animate progress to 100%
+      this.elements.exportProgressBar.style.width = '100%';
+      this.elements.exportStatus.textContent = 'Complete! Starting download...';
+      toast.success('Video rendered successfully!');
       
       // Trigger download
-      window.location.href = `/api/download/${this.currentProject.id}`;
+      const downloadUrl = `/api/download/${this.currentProject.id}`;
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${this.currentProject.name || 'demo'}-${preset}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       
-      setTimeout(() => this.hideExportModal(), 2000);
+      setTimeout(() => {
+        this.hideExportModal();
+        this.elements.cancelExport.disabled = false;
+      }, 1500);
       
     } catch (error) {
+      console.error('Export failed:', error);
       this.elements.exportStatus.textContent = `Error: ${error.message}`;
+      this.elements.exportProgressBar.style.width = '0%';
+      this.elements.exportProgressBar.style.background = 'var(--error)';
+      toast.error(`Export failed: ${error.message}`);
+      this.elements.cancelExport.disabled = false;
+      
+      // Reset progress bar color after delay
+      setTimeout(() => {
+        this.elements.exportProgressBar.style.background = '';
+      }, 3000);
     }
+  }
+  
+  cancelExport() {
+    this._exportCancelled = true;
+    this.hideExportModal();
+    toast.info('Export cancelled');
   }
   
   // Status
