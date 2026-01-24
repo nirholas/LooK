@@ -207,7 +207,15 @@ export async function startServer(options = {}) {
     if (req.query.full === 'true') {
       try {
         const { chromium } = await import('playwright');
-        const browser = await chromium.launch({ headless: true });
+        const browser = await chromium.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
+          ]
+        });
         await browser.close();
         checks.services.playwright = 'ready';
       } catch (e) {
@@ -372,7 +380,15 @@ export async function startServer(options = {}) {
       project.settings.style = style;
 
       // Capture screenshot and analyze
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      });
       const page = await browser.newPage({ 
         viewport: { width: project.settings.width, height: project.settings.height } 
       });
@@ -1384,10 +1400,13 @@ export async function startServer(options = {}) {
       
       // Don't try to open browser in production/container environments
       if (openBrowser && !process.env.PORT) {
-        import('child_process').then(({ exec }) => {
+        import('child_process').then(({ execFile }) => {
           const cmd = process.platform === 'darwin' ? 'open' :
                       process.platform === 'win32' ? 'start' : 'xdg-open';
-          exec(`${cmd} ${url}`);
+          // Use execFile with args array for safety (even though url is internal)
+          execFile(cmd, [url], (err) => {
+            // Ignore open errors silently
+          });
         }).catch(() => {
           // Ignore open errors
         });

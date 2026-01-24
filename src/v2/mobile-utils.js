@@ -1,9 +1,29 @@
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { access, readFile } from 'fs/promises';
 import { join } from 'path';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Validate and sanitize input to prevent command injection
+ * @param {string} input - Input string to validate
+ * @param {string} context - Context for error messages
+ * @returns {string} Sanitized input
+ * @throws {Error} If input contains dangerous characters
+ */
+function sanitizeInput(input, context = 'input') {
+  if (typeof input !== 'string') {
+    throw new Error(`Invalid ${context}: must be a string`);
+  }
+  // Block shell metacharacters and control sequences
+  const dangerous = /[;&|`$(){}\[\]<>\\\n\r]/;
+  if (dangerous.test(input)) {
+    throw new Error(`Invalid ${context}: contains forbidden characters`);
+  }
+  return input;
+}
 
 /**
  * Mobile utilities for app detection, validation, and setup
@@ -181,6 +201,9 @@ export async function getAllDevices() {
  * Boot an iOS simulator if not already running
  */
 export async function bootIOSSimulator(deviceName) {
+  // Sanitize input to prevent injection
+  sanitizeInput(deviceName, 'device name');
+  
   const simulators = await getIOSSimulators();
   const device = simulators.find(s => 
     s.name.toLowerCase() === deviceName.toLowerCase() ||
@@ -192,7 +215,8 @@ export async function bootIOSSimulator(deviceName) {
   }
   
   if (device.state !== 'Booted') {
-    await execAsync(`xcrun simctl boot "${device.udid}"`);
+    // Use execFileAsync with arguments array to prevent command injection
+    await execFileAsync('xcrun', ['simctl', 'boot', device.udid]);
     // Wait for boot
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
@@ -204,18 +228,27 @@ export async function bootIOSSimulator(deviceName) {
  * Start an Android emulator
  */
 export async function startAndroidEmulator(emulatorName) {
+  // Sanitize input to prevent injection
+  sanitizeInput(emulatorName, 'emulator name');
+  
   try {
-    // Check if already running
-    const { stdout } = await execAsync('adb devices');
+    // Check if already running using execFileAsync
+    const { stdout } = await execFileAsync('adb', ['devices']);
     if (stdout.includes('emulator')) {
       return { started: true, alreadyRunning: true };
     }
     
-    // Start emulator in background
-    exec(`emulator -avd "${emulatorName}" &`);
+    // Start emulator in background using spawn for safety
+    // execFile with detached option for background process
+    const { spawn } = await import('child_process');
+    const child = spawn('emulator', ['-avd', emulatorName], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
     
     // Wait for device to be ready
-    await execAsync('adb wait-for-device', { timeout: 60000 });
+    await execFileAsync('adb', ['wait-for-device'], { timeout: 60000 });
     
     return { started: true, alreadyRunning: false };
   } catch (e) {

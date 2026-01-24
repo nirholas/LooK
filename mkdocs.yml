@@ -16,10 +16,11 @@ copyright: Copyright &copy; 2024-2026 LooK Contributors
 theme:
   name: material
   language: en
+  custom_dir: docs/overrides
   icon:
     repo: fontawesome/brands/github
-    logo: material/video-box
-  favicon: assets/favicon.png
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
   features:
     - navigation.instant
     - navigation.instant.prefetch
@@ -90,9 +91,11 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
-      base_path: docs
+      base_path:
+        - docs
+        - .
       auto_append:
-        - includes/abbreviations.md
+        - docs/includes/abbreviations.md
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

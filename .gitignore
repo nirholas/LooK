@@ -17,6 +17,7 @@ tmp/
 # Build
 dist/
 build/
+site/
 *.tsbuildinfo
 
 # Test coverage
