@@ -1161,10 +1161,6 @@ look serve              # Start the web UI</code></pre>
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
     return `${Math.floor(seconds / 86400)}d`;
   }
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-    }
-  }
   
   renderProjectsList(projects) {
     if (!this.elements.projectsList) return;
