@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { chromium } from 'playwright';
@@ -18,6 +19,17 @@ import { detectImportType, validateUrl, processImport } from './import.js';
 import { openApiSpec, generateSwaggerHtml } from './openapi.js';
 import { createLogger, httpLogger } from './logger.js';
 import { errorHandler, ValidationError, NotFoundError, asyncHandler } from './errors.js';
+
+// Auth and billing (lazy loaded to avoid startup errors if deps not installed)
+let authRoutes, billingRoutes, initDatabase;
+try {
+  authRoutes = (await import('../auth/routes.js')).default;
+  billingRoutes = (await import('../billing/stripe.js')).default;
+  const db = await import('../db/index.js');
+  initDatabase = db.initDatabase;
+} catch (err) {
+  console.warn('Auth/billing modules not loaded:', err.message);
+}
 
 // Create server logger
 const log = createLogger('server');
@@ -81,6 +93,17 @@ export async function startServer(options = {}) {
   const wss = new WebSocketServer({ server });
 
   app.use(express.json({ limit: '50mb' }));
+  app.use(cookieParser());
+  
+  // Initialize database if available
+  if (initDatabase) {
+    try {
+      initDatabase();
+      log.info('Database initialized');
+    } catch (err) {
+      log.warn('Database init failed:', err.message);
+    }
+  }
   
   // HTTP request logging
   app.use(httpLogger({ logger: log }));
@@ -176,6 +199,19 @@ export async function startServer(options = {}) {
     metrics.requests++;
     next();
   });
+
+  // ============================================================
+  // Auth & Billing Routes
+  // ============================================================
+  if (authRoutes) {
+    app.use('/auth', authRoutes);
+    log.info('Auth routes enabled at /auth');
+  }
+  
+  if (billingRoutes) {
+    app.use('/billing', billingRoutes);
+    log.info('Billing routes enabled at /billing');
+  }
 
   // ============================================================
   // REST API Routes

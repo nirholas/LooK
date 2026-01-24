@@ -155,7 +155,51 @@ class LookEditor {
       exportProgressBar: document.getElementById('export-progress-bar'),
       exportStatus: document.getElementById('export-status'),
       cancelExport: document.getElementById('cancel-export'),
-      startExport: document.getElementById('start-export')
+      startExport: document.getElementById('start-export'),
+      exportCloseBtn: document.getElementById('export-close-btn'),
+      
+      // Export tabs
+      exportTabs: document.querySelectorAll('.export-tab'),
+      exportVideoOptions: document.getElementById('export-video-options'),
+      exportGifOptions: document.getElementById('export-gif-options'),
+      exportThumbnailOptions: document.getElementById('export-thumbnail-options'),
+      
+      // GIF export
+      gifQuality: document.getElementById('gif-quality'),
+      gifFps: document.getElementById('gif-fps'),
+      gifWidth: document.getElementById('gif-width'),
+      gifStart: document.getElementById('gif-start'),
+      gifEnd: document.getElementById('gif-end'),
+      gifLoop: document.getElementById('gif-loop'),
+      gifPreview: document.getElementById('gif-preview'),
+      
+      // Thumbnail export
+      thumbnailPreview: document.getElementById('thumbnail-preview'),
+      thumbnailSeek: document.getElementById('thumbnail-seek'),
+      thumbnailPreset: document.getElementById('thumbnail-preset'),
+      thumbnailFormat: document.getElementById('thumbnail-format'),
+      thumbnailAddTitle: document.getElementById('thumbnail-add-title'),
+      thumbnailTitleText: document.getElementById('thumbnail-title-text'),
+      thumbnailAddLogo: document.getElementById('thumbnail-add-logo'),
+      thumbnailPrev: document.getElementById('thumbnail-prev'),
+      thumbnailNext: document.getElementById('thumbnail-next'),
+      
+      // Overlay settings
+      enableLowerThirds: document.getElementById('enable-lower-thirds'),
+      lowerThirdsName: document.getElementById('lower-thirds-name'),
+      lowerThirdsTitle: document.getElementById('lower-thirds-title'),
+      lowerThirdsStyle: document.getElementById('lower-thirds-style'),
+      lowerThirdsPosition: document.getElementById('lower-thirds-position'),
+      enableKeyboardVisual: document.getElementById('enable-keyboard-visual'),
+      keyboardStyle: document.getElementById('keyboard-style'),
+      keyboardPosition: document.getElementById('keyboard-position'),
+      keyboardSize: document.getElementById('keyboard-size'),
+      enableCallouts: document.getElementById('enable-callouts'),
+      calloutTools: document.querySelectorAll('.callout-tool'),
+      calloutColor: document.getElementById('callout-color'),
+      calloutAnimation: document.getElementById('callout-animation'),
+      transitionStyle: document.getElementById('transition-style'),
+      transitionDuration: document.getElementById('transition-duration')
     };
     
     this.init();
@@ -352,6 +396,43 @@ class LookEditor {
     this.elements.exportBtn?.addEventListener('click', () => this.showExportModal());
     this.elements.cancelExport?.addEventListener('click', () => this.cancelExport());
     this.elements.startExport?.addEventListener('click', () => this.startExport());
+    this.elements.exportCloseBtn?.addEventListener('click', () => this.hideExportModal());
+    
+    // Export tabs
+    this.elements.exportTabs?.forEach(tab => {
+      tab.addEventListener('click', () => this.switchExportTab(tab.dataset.type));
+    });
+    
+    // Thumbnail controls
+    this.elements.thumbnailSeek?.addEventListener('input', (e) => this.updateThumbnailPreview(e.target.value));
+    this.elements.thumbnailPrev?.addEventListener('click', () => this.seekThumbnail(-1));
+    this.elements.thumbnailNext?.addEventListener('click', () => this.seekThumbnail(1));
+    this.elements.thumbnailPreset?.addEventListener('change', (e) => this.onThumbnailPresetChange(e.target.value));
+    this.elements.thumbnailAddTitle?.addEventListener('change', (e) => {
+      document.getElementById('thumbnail-title-input').style.display = e.target.checked ? 'block' : 'none';
+    });
+    
+    // Callout tools
+    this.elements.calloutTools?.forEach(tool => {
+      tool.addEventListener('click', () => this.selectCalloutTool(tool.dataset.tool));
+    });
+    
+    // Overlay settings
+    const overlayInputs = [
+      'enableLowerThirds', 'lowerThirdsName', 'lowerThirdsTitle', 'lowerThirdsStyle', 'lowerThirdsPosition',
+      'enableKeyboardVisual', 'keyboardStyle', 'keyboardPosition', 'keyboardSize',
+      'enableCallouts', 'calloutColor', 'calloutAnimation',
+      'transitionStyle', 'transitionDuration'
+    ];
+    overlayInputs.forEach(id => {
+      const el = this.elements[id];
+      if (el) {
+        el.addEventListener('change', () => {
+          this.onOverlaySettingsChange();
+          this.autoSave?.markDirty();
+        });
+      }
+    });
     
     // Navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -2088,10 +2169,106 @@ look serve              # Start the web UI</code></pre>
     this.elements.exportModal.classList.remove('hidden');
     this.elements.exportProgress.classList.add('hidden');
     this.elements.startExport.disabled = false;
+    this._currentExportType = 'video';
+    this.switchExportTab('video');
+    
+    // Initialize thumbnail preview
+    if (this.currentProject?.id) {
+      this.updateThumbnailPreview(50);
+    }
   }
   
   hideExportModal() {
     this.elements.exportModal.classList.add('hidden');
+  }
+  
+  switchExportTab(type) {
+    this._currentExportType = type;
+    
+    // Update tab styles
+    this.elements.exportTabs?.forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.type === type);
+    });
+    
+    // Show/hide sections
+    this.elements.exportVideoOptions?.classList.toggle('hidden', type !== 'video');
+    this.elements.exportGifOptions?.classList.toggle('hidden', type !== 'gif');
+    this.elements.exportThumbnailOptions?.classList.toggle('hidden', type !== 'thumbnail');
+    
+    // Update export button text
+    const buttonTexts = {
+      video: '🎬 Export Video',
+      gif: '🎞️ Export GIF',
+      thumbnail: '🖼️ Save Thumbnail'
+    };
+    this.elements.startExport.innerHTML = `<span class="icon">${buttonTexts[type].split(' ')[0]}</span> ${buttonTexts[type].split(' ').slice(1).join(' ')}`;
+  }
+  
+  updateThumbnailPreview(percent) {
+    if (!this.currentProject?.id) return;
+    
+    const timestamp = (percent / 100) * (this.currentProject.duration || 25);
+    const url = API.getThumbnailUrl(this.currentProject.id, { timestamp });
+    
+    if (this.elements.thumbnailPreview) {
+      this.elements.thumbnailPreview.src = url;
+    }
+  }
+  
+  seekThumbnail(direction) {
+    const current = parseInt(this.elements.thumbnailSeek?.value || 50);
+    const newValue = Math.max(0, Math.min(100, current + direction * 5));
+    if (this.elements.thumbnailSeek) {
+      this.elements.thumbnailSeek.value = newValue;
+    }
+    this.updateThumbnailPreview(newValue);
+  }
+  
+  onThumbnailPresetChange(preset) {
+    const customSize = document.getElementById('thumbnail-custom-size');
+    if (customSize) {
+      customSize.style.display = preset === 'custom' ? 'flex' : 'none';
+    }
+  }
+  
+  selectCalloutTool(toolType) {
+    this.elements.calloutTools?.forEach(tool => {
+      tool.classList.toggle('active', tool.dataset.tool === toolType);
+    });
+    this._selectedCalloutTool = toolType;
+    toast.info(`Selected ${toolType} tool. Click on the video to add.`);
+  }
+  
+  onOverlaySettingsChange() {
+    if (!this.currentProject) return;
+    
+    // Collect overlay settings
+    const overlays = {
+      lowerThirds: {
+        enabled: this.elements.enableLowerThirds?.checked || false,
+        name: this.elements.lowerThirdsName?.value || '',
+        title: this.elements.lowerThirdsTitle?.value || '',
+        style: this.elements.lowerThirdsStyle?.value || 'modern',
+        position: this.elements.lowerThirdsPosition?.value || 'bottom-left'
+      },
+      keyboard: {
+        enabled: this.elements.enableKeyboardVisual?.checked || false,
+        style: this.elements.keyboardStyle?.value || 'mac',
+        position: this.elements.keyboardPosition?.value || 'bottom-center',
+        size: this.elements.keyboardSize?.value || 'medium'
+      },
+      callouts: {
+        enabled: this.elements.enableCallouts?.checked || false,
+        color: this.elements.calloutColor?.value || '#EF4444',
+        animation: this.elements.calloutAnimation?.value || 'fade'
+      },
+      transitions: {
+        style: this.elements.transitionStyle?.value || 'none',
+        duration: parseFloat(this.elements.transitionDuration?.value || '0.5')
+      }
+    };
+    
+    this.currentProject.overlays = overlays;
   }
   
   async startExport() {
@@ -2100,6 +2277,18 @@ look serve              # Start the web UI</code></pre>
       return;
     }
     
+    // Route to appropriate export method based on type
+    switch (this._currentExportType) {
+      case 'gif':
+        return this.exportGif();
+      case 'thumbnail':
+        return this.exportThumbnail();
+      default:
+        return this.exportVideo();
+    }
+  }
+  
+  async exportVideo() {
     const preset = this.elements.exportFormat.value;
     
     this.elements.exportProgress.classList.remove('hidden');
@@ -2149,6 +2338,113 @@ look serve              # Start the web UI</code></pre>
       setTimeout(() => {
         this.elements.exportProgressBar.style.background = '';
       }, 3000);
+    }
+  }
+  
+  async exportGif() {
+    this.elements.exportProgress.classList.remove('hidden');
+    this.elements.startExport.disabled = true;
+    this.elements.cancelExport.disabled = true;
+    this.elements.exportProgressBar.style.width = '0%';
+    this.elements.exportStatus.textContent = 'Generating GIF...';
+    this._exportCancelled = false;
+    
+    try {
+      const options = {
+        quality: this.elements.gifQuality?.value || 'medium',
+        fps: parseInt(this.elements.gifFps?.value || '15'),
+        width: parseInt(this.elements.gifWidth?.value || '640'),
+        startTime: parseFloat(this.elements.gifStart?.value) || undefined,
+        endTime: parseFloat(this.elements.gifEnd?.value) || undefined,
+        loop: this.elements.gifLoop?.checked !== false
+      };
+      
+      // Animate progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress = Math.min(progress + 5, 90);
+        this.elements.exportProgressBar.style.width = `${progress}%`;
+      }, 500);
+      
+      const result = await API.exportGif(this.currentProject.id, options);
+      
+      clearInterval(progressInterval);
+      
+      if (this._exportCancelled) return;
+      
+      this.elements.exportProgressBar.style.width = '100%';
+      this.elements.exportStatus.textContent = 'GIF created! Starting download...';
+      toast.success('GIF exported successfully!');
+      
+      // Trigger download
+      const downloadUrl = API.getGifUrl(this.currentProject.id);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${this.currentProject.name || 'demo'}.gif`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      setTimeout(() => {
+        this.hideExportModal();
+        this.elements.cancelExport.disabled = false;
+      }, 1500);
+      
+    } catch (error) {
+      console.error('GIF export failed:', error);
+      this.elements.exportStatus.textContent = `Error: ${error.message}`;
+      this.elements.exportProgressBar.style.width = '0%';
+      toast.error(`GIF export failed: ${error.message}`);
+      this.elements.cancelExport.disabled = false;
+    }
+  }
+  
+  async exportThumbnail() {
+    this.elements.exportProgress.classList.remove('hidden');
+    this.elements.startExport.disabled = true;
+    this.elements.cancelExport.disabled = true;
+    this.elements.exportProgressBar.style.width = '50%';
+    this.elements.exportStatus.textContent = 'Generating thumbnail...';
+    
+    try {
+      const timestamp = (parseInt(this.elements.thumbnailSeek?.value || 50) / 100) * (this.currentProject.duration || 25);
+      
+      const options = {
+        timestamp,
+        preset: this.elements.thumbnailPreset?.value || 'youtube',
+        format: this.elements.thumbnailFormat?.value || 'png',
+        addTitle: this.elements.thumbnailAddTitle?.checked,
+        titleText: this.elements.thumbnailTitleText?.value,
+        addLogo: this.elements.thumbnailAddLogo?.checked
+      };
+      
+      const result = await API.generateThumbnail(this.currentProject.id, options);
+      
+      this.elements.exportProgressBar.style.width = '100%';
+      this.elements.exportStatus.textContent = 'Thumbnail saved!';
+      toast.success('Thumbnail generated!');
+      
+      // Trigger download
+      if (result.thumbnailUrl) {
+        const a = document.createElement('a');
+        a.href = result.thumbnailUrl;
+        a.download = `${this.currentProject.name || 'demo'}-thumbnail.${options.format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      
+      setTimeout(() => {
+        this.hideExportModal();
+        this.elements.cancelExport.disabled = false;
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Thumbnail export failed:', error);
+      this.elements.exportStatus.textContent = `Error: ${error.message}`;
+      this.elements.exportProgressBar.style.width = '0%';
+      toast.error(`Thumbnail export failed: ${error.message}`);
+      this.elements.cancelExport.disabled = false;
     }
   }
   

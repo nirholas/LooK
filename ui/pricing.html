@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing - LooK | AI Demo Video Generator</title>
+  <meta name="description" content="Choose the perfect plan for your demo video needs. Start free, upgrade anytime.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #18181b;
+      --bg-tertiary: #27272a;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #3f3f46;
+      --accent-primary: #8b5cf6;
+      --accent-secondary: #a78bfa;
+      --accent-glow: rgba(139, 92, 246, 0.3);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      --gradient-secondary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .header-nav {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+    
+    .header-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .header-nav a:hover {
+      color: var(--text-primary);
+    }
+    
+    .btn-login {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-login:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    
+    /* Billing Toggle */
+    .billing-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 3rem;
+    }
+    
+    .billing-toggle span {
+      color: var(--text-secondary);
+    }
+    
+    .billing-toggle span.active {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    
+    .toggle-switch {
+      width: 60px;
+      height: 32px;
+      background: var(--bg-tertiary);
+      border-radius: 16px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-switch.yearly {
+      background: var(--accent-primary);
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.3s;
+    }
+    
+    .toggle-switch.yearly::after {
+      transform: translateX(28px);
+    }
+    
+    .save-badge {
+      background: var(--success);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    /* Pricing Cards */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+    }
+    
+    .pricing-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    
+    .pricing-card:hover {
+      transform: translateY(-4px);
+    }
+    
+    .pricing-card.popular {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+    
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gradient-primary);
+      color: white;
+      padding: 0.25rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .plan-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .plan-description {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    
+    .plan-price {
+      display: flex;
+      align-items: baseline;
+      gap: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .price-amount {
+      font-size: 3rem;
+      font-weight: 800;
+    }
+    
+    .price-period {
+      color: var(--text-secondary);
+    }
+    
+    .price-yearly {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .plan-features {
+      list-style: none;
+      margin-bottom: 2rem;
+      flex: 1;
+    }
+    
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-secondary);
+    }
+    
+    .plan-features li.highlight {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    
+    .check-icon {
+      color: var(--success);
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+    
+    .x-icon {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+    }
+    
+    .plan-cta {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .plan-cta.primary {
+      background: var(--gradient-primary);
+      color: white;
+    }
+    
+    .plan-cta.primary:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+    
+    .plan-cta.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .plan-cta.secondary:hover {
+      background: var(--border-color);
+    }
+    
+    /* Enterprise Card */
+    .pricing-card.enterprise {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    }
+    
+    /* Features Comparison */
+    .features-section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    
+    .features-section h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .features-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .features-table th,
+    .features-table td {
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .features-table th:first-child,
+    .features-table td:first-child {
+      text-align: left;
+    }
+    
+    .features-table thead th {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .features-table tbody td {
+      color: var(--text-secondary);
+    }
+    
+    .features-table .check {
+      color: var(--success);
+    }
+    
+    .features-table .dash {
+      color: var(--text-muted);
+    }
+    
+    /* FAQ */
+    .faq-section {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+    
+    .faq-section h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 3rem;
+    }
+    
+    .faq-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    
+    .faq-question {
+      width: 100%;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+    }
+    
+    .faq-question:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .faq-answer {
+      padding: 0 1.25rem 1.25rem;
+      color: var(--text-secondary);
+      display: none;
+    }
+    
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+    
+    .faq-item.open .faq-question .chevron {
+      transform: rotate(180deg);
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--bg-secondary);
+      margin: 2rem;
+      border-radius: 24px;
+      max-width: 800px;
+      margin: 2rem auto;
+    }
+    
+    .cta-section h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .cta-section p {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn-large {
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-muted);
+    }
+    
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+    
+    .footer-links a:hover {
+      color: var(--text-primary);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header-nav {
+        display: none;
+      }
+      
+      .features-table {
+        font-size: 0.875rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </div>
+      LooK
+    </a>
+    <nav class="header-nav">
+      <a href="/features">Features</a>
+      <a href="/docs">Docs</a>
+      <a href="/pricing" style="color: var(--text-primary); font-weight: 500;">Pricing</a>
+      <button class="btn-login" onclick="window.location.href='/login'">Log in</button>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Simple, Transparent Pricing</h1>
+    <p>Start free, upgrade when you need more. No hidden fees, cancel anytime.</p>
+  </section>
+  
+  <!-- Billing Toggle -->
+  <div class="billing-toggle">
+    <span class="monthly-label active">Monthly</span>
+    <div class="toggle-switch" id="billingToggle" onclick="toggleBilling()"></div>
+    <span class="yearly-label">Yearly</span>
+    <span class="save-badge">Save 17%</span>
+  </div>
+
+  <!-- Pricing Cards -->
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-description">Perfect for trying out LooK</div>
+      <div class="plan-price">
+        <span class="price-amount">$0</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-yearly">Free forever</div>
+      <ul class="plan-features">
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          3 demo videos per month
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          1080p resolution
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Up to 60 second videos
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          YouTube export preset
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Basic cursor styles
+        </li>
+        <li>
+          <svg class="x-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          AI voiceover
+        </li>
+        <li>
+          <svg class="x-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Smart zoom
+        </li>
+      </ul>
+      <button class="plan-cta secondary" onclick="startFree()">Get Started Free</button>
+    </div>
+    
+    <!-- Pro -->
+    <div class="pricing-card popular">
+      <div class="popular-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-description">For creators and small teams</div>
+      <div class="plan-price">
+        <span class="price-amount" data-monthly="29" data-yearly="24">$29</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-yearly yearly-price">Billed monthly</div>
+      <ul class="plan-features">
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          50 demo videos per month
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          AI voiceover generation
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Smart zoom & follow cursor
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          4K resolution
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Up to 5 minute videos
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          All export presets
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Custom cursors & effects
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Multi-page demos
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          API access
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          No watermark
+        </li>
+      </ul>
+      <button class="plan-cta primary" onclick="subscribe('pro')">Start 14-Day Free Trial</button>
+    </div>
+    
+    <!-- Team -->
+    <div class="pricing-card">
+      <div class="plan-name">Team</div>
+      <div class="plan-description">For growing teams and agencies</div>
+      <div class="plan-price">
+        <span class="price-amount" data-monthly="99" data-yearly="82">$99</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-yearly yearly-price">Billed monthly</div>
+      <ul class="plan-features">
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          200 demo videos per month
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          5 team members
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Mobile app recording
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Everything in Pro
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Up to 10 minute videos
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Device frames (iPhone, Android)
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Priority rendering
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Brand kit (colors, logos)
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Shared team workspace
+        </li>
+      </ul>
+      <button class="plan-cta secondary" onclick="subscribe('team')">Start 14-Day Free Trial</button>
+    </div>
+    
+    <!-- Enterprise -->
+    <div class="pricing-card enterprise">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-description">For large organizations</div>
+      <div class="plan-price">
+        <span class="price-amount">Custom</span>
+      </div>
+      <div class="price-yearly">Contact us for pricing</div>
+      <ul class="plan-features">
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Unlimited videos
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Unlimited team members
+        </li>
+        <li class="highlight">
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Self-hosted option
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Everything in Team
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          SSO / SAML integration
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Audit logs
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          99.9% SLA
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Dedicated support
+        </li>
+        <li>
+          <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Custom integrations
+        </li>
+      </ul>
+      <button class="plan-cta secondary" onclick="contactSales()">Contact Sales</button>
+    </div>
+  </div>
+
+  <!-- Features Comparison -->
+  <section class="features-section">
+    <h2>Compare Features</h2>
+    <table class="features-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th>Pro</th>
+          <th>Team</th>
+          <th>Enterprise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Videos per month</td>
+          <td>3</td>
+          <td>50</td>
+          <td>200</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>Max video duration</td>
+          <td>60s</td>
+          <td>5 min</td>
+          <td>10 min</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>Resolution</td>
+          <td>1080p</td>
+          <td>4K</td>
+          <td>4K</td>
+          <td>4K</td>
+        </tr>
+        <tr>
+          <td>AI Voiceover</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Smart Zoom</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Custom Cursors</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Multi-page Demos</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Mobile Recording</td>
+          <td class="dash">—</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Team Members</td>
+          <td>1</td>
+          <td>1</td>
+          <td>5</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>API Access</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>Priority Support</td>
+          <td class="dash">—</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>SSO / SAML</td>
+          <td class="dash">—</td>
+          <td class="dash">—</td>
+          <td class="dash">—</td>
+          <td class="check">✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <h2>Frequently Asked Questions</h2>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        What counts as a "video"?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        Each time you generate or export a demo video, it counts as one video toward your monthly limit. Editing a project without exporting doesn't count. You can preview as many times as you want.
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Can I cancel anytime?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        Yes! You can cancel your subscription at any time. You'll keep access to your plan until the end of your billing period. No questions asked.
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Do I need to provide my own AI API keys?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        On the Free plan, you need to provide your own OpenAI API key for AI features. On Pro and above, AI features are included in your subscription—no API keys needed.
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        What payment methods do you accept?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        We accept all major credit cards (Visa, Mastercard, American Express) through Stripe. For Enterprise plans, we also support invoicing and bank transfers.
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Is there a free trial?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        Yes! Pro and Team plans come with a 14-day free trial. No credit card required to start. You get full access to all features during the trial.
+      </div>
+    </div>
+    
+    <div class="faq-item">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Can I upgrade or downgrade my plan?
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer">
+        Absolutely. You can upgrade or downgrade at any time. When upgrading, you'll be prorated for the remainder of your billing cycle. When downgrading, the change takes effect at your next billing date.
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>Ready to create stunning demos?</h2>
+    <p>Join thousands of companies using LooK to create professional product demos in minutes.</p>
+    <div class="cta-buttons">
+      <a href="/signup" class="btn-large btn-primary">Start Free Trial</a>
+      <a href="/demo" class="btn-large btn-secondary">Watch Demo</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/terms">Terms of Service</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/docs">Documentation</a>
+      <a href="/support">Support</a>
+    </div>
+    <p>© 2026 LooK. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let isYearly = false;
+    
+    function toggleBilling() {
+      isYearly = !isYearly;
+      const toggle = document.getElementById('billingToggle');
+      const monthlyLabel = document.querySelector('.monthly-label');
+      const yearlyLabel = document.querySelector('.yearly-label');
+      const priceAmounts = document.querySelectorAll('.price-amount[data-monthly]');
+      const yearlyPrices = document.querySelectorAll('.yearly-price');
+      
+      toggle.classList.toggle('yearly', isYearly);
+      monthlyLabel.classList.toggle('active', !isYearly);
+      yearlyLabel.classList.toggle('active', isYearly);
+      
+      priceAmounts.forEach(el => {
+        const price = isYearly ? el.dataset.yearly : el.dataset.monthly;
+        el.textContent = `$${price}`;
+      });
+      
+      yearlyPrices.forEach(el => {
+        el.textContent = isYearly ? 'Billed annually' : 'Billed monthly';
+      });
+    }
+    
+    function toggleFaq(button) {
+      const item = button.closest('.faq-item');
+      item.classList.toggle('open');
+    }
+    
+    function startFree() {
+      window.location.href = '/signup';
+    }
+    
+    function subscribe(plan) {
+      const interval = isYearly ? 'yearly' : 'monthly';
+      window.location.href = `/signup?plan=${plan}&interval=${interval}`;
+    }
+    
+    function contactSales() {
+      window.location.href = 'mailto:enterprise@look.video?subject=Enterprise%20Plan%20Inquiry';
+    }
+  </script>
+</body>
+</html>

@@ -108,7 +108,15 @@ export class SiteExplorer {
    * Initialize browser
    */
   async init() {
-    this.browser = await chromium.launch({ headless: true });
+    this.browser = await chromium.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
     this.page = await this.browser.newPage({
       viewport: { width: this.width, height: this.height }
     });

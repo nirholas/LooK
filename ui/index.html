@@ -482,6 +482,152 @@
                   </select>
                 </div>
               </details>
+
+              <!-- Lower Thirds Settings -->
+              <details class="settings-group settings-lower-thirds">
+                <summary><h4>Lower Thirds</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-lower-thirds">
+                    <span>Enable Lower Thirds</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="lower-thirds-name">Name</label>
+                  <input type="text" id="lower-thirds-name" class="form-input" placeholder="Your Name">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="lower-thirds-title">Title</label>
+                  <input type="text" id="lower-thirds-title" class="form-input" placeholder="Your Title">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="lower-thirds-style">Style</label>
+                  <select id="lower-thirds-style">
+                    <option value="modern">Modern</option>
+                    <option value="classic">Classic</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="gradient">Gradient</option>
+                    <option value="broadcast">Broadcast</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="lower-thirds-position">Position</label>
+                  <select id="lower-thirds-position">
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="top-left">Top Left</option>
+                  </select>
+                </div>
+              </details>
+
+              <!-- Keyboard Shortcuts Visualizer -->
+              <details class="settings-group settings-keyboard">
+                <summary><h4>Keyboard Visualizer</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-keyboard-visual">
+                    <span>Show Key Presses</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="keyboard-style">Style</label>
+                  <select id="keyboard-style">
+                    <option value="mac">macOS</option>
+                    <option value="windows">Windows</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="keyboard-position">Position</label>
+                  <select id="keyboard-position">
+                    <option value="bottom-center">Bottom Center</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="top-right">Top Right</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="keyboard-size">Size</label>
+                  <select id="keyboard-size">
+                    <option value="small">Small</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+              </details>
+
+              <!-- Callouts & Annotations -->
+              <details class="settings-group settings-callouts">
+                <summary><h4>Callouts & Annotations</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-callouts">
+                    <span>Enable Callouts</span>
+                  </label>
+                </div>
+                
+                <div class="callout-tools" id="callout-tools">
+                  <button class="callout-tool" data-tool="arrow" title="Arrow">➡️</button>
+                  <button class="callout-tool" data-tool="box" title="Highlight Box">🔲</button>
+                  <button class="callout-tool" data-tool="circle" title="Circle">⭕</button>
+                  <button class="callout-tool" data-tool="badge" title="Number Badge">①</button>
+                  <button class="callout-tool" data-tool="spotlight" title="Spotlight">🔦</button>
+                  <button class="callout-tool" data-tool="blur" title="Blur Region">🔳</button>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="callout-color">Color</label>
+                  <input type="color" id="callout-color" value="#EF4444">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="callout-animation">Animation</label>
+                  <select id="callout-animation">
+                    <option value="none">None</option>
+                    <option value="fade">Fade In</option>
+                    <option value="draw">Draw</option>
+                    <option value="bounce">Bounce</option>
+                  </select>
+                </div>
+              </details>
+
+              <!-- Scene Transitions -->
+              <details class="settings-group settings-transitions">
+                <summary><h4>Scene Transitions</h4></summary>
+                
+                <div class="setting-row">
+                  <label for="transition-style">Transition Style</label>
+                  <select id="transition-style">
+                    <option value="none">None</option>
+                    <option value="fade">Fade</option>
+                    <option value="blur">Blur</option>
+                    <option value="slide-left">Slide Left</option>
+                    <option value="slide-right">Slide Right</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="wipe">Wipe</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="transition-duration">Duration</label>
+                  <select id="transition-duration">
+                    <option value="0.3">Fast (0.3s)</option>
+                    <option value="0.5" selected>Medium (0.5s)</option>
+                    <option value="0.8">Slow (0.8s)</option>
+                    <option value="1.0">Very Slow (1.0s)</option>
+                  </select>
+                </div>
+              </details>
             </div>
           </aside>
         </div>
@@ -690,27 +836,175 @@
 
     <!-- Export modal -->
     <div id="export-modal" class="modal hidden">
-      <div class="modal-content">
-        <h2>Export Video</h2>
-        <div class="export-options">
-          <div class="setting-row">
-            <label for="export-format">Format</label>
-            <select id="export-format">
-              <option value="youtube">YouTube (1920x1080)</option>
-              <option value="twitter">Twitter (1280x720)</option>
-              <option value="instagram">Instagram (1080x1080)</option>
-              <option value="tiktok">TikTok (1080x1920)</option>
-              <option value="gif">GIF (640x360)</option>
-            </select>
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2>Export Video</h2>
+          <button class="modal-close" id="export-close-btn" aria-label="Close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <!-- Export Type Tabs -->
+          <div class="export-tabs">
+            <button class="export-tab active" data-type="video">🎬 Video</button>
+            <button class="export-tab" data-type="gif">🎞️ GIF</button>
+            <button class="export-tab" data-type="thumbnail">🖼️ Thumbnail</button>
+          </div>
+          
+          <!-- Video Export Options -->
+          <div id="export-video-options" class="export-section">
+            <div class="setting-row">
+              <label for="export-format">Platform Preset</label>
+              <select id="export-format">
+                <option value="youtube">YouTube (1920×1080)</option>
+                <option value="twitter">Twitter (1280×720)</option>
+                <option value="instagram">Instagram (1080×1080)</option>
+                <option value="tiktok">TikTok (1080×1920)</option>
+                <option value="linkedin">LinkedIn (1920×1080)</option>
+                <option value="prores">ProRes (Master Quality)</option>
+              </select>
+            </div>
+            
+            <details class="export-advanced">
+              <summary>Advanced Options</summary>
+              <div class="setting-row">
+                <label for="export-codec">Codec</label>
+                <select id="export-codec">
+                  <option value="h264">H.264 (Best Compatibility)</option>
+                  <option value="h265">H.265/HEVC (Smaller Size)</option>
+                  <option value="prores">ProRes 422 (Master)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <label for="export-bitrate">Quality</label>
+                <select id="export-bitrate">
+                  <option value="high">High (Larger File)</option>
+                  <option value="medium" selected>Medium (Balanced)</option>
+                  <option value="low">Low (Smaller File)</option>
+                </select>
+              </div>
+            </details>
+          </div>
+          
+          <!-- GIF Export Options -->
+          <div id="export-gif-options" class="export-section hidden">
+            <div class="gif-preview-container">
+              <div id="gif-preview" class="gif-preview"></div>
+              <p class="preview-hint">Preview will appear here</p>
+            </div>
+            
+            <div class="setting-row">
+              <label for="gif-quality">Quality</label>
+              <select id="gif-quality">
+                <option value="high">High (Larger File)</option>
+                <option value="medium" selected>Medium (Balanced)</option>
+                <option value="low">Low (Smaller File)</option>
+              </select>
+            </div>
+            
+            <div class="setting-row">
+              <label for="gif-fps">Frame Rate</label>
+              <select id="gif-fps">
+                <option value="10">10 FPS (Smooth)</option>
+                <option value="15" selected>15 FPS (Balanced)</option>
+                <option value="20">20 FPS (High)</option>
+              </select>
+            </div>
+            
+            <div class="setting-row">
+              <label for="gif-width">Width</label>
+              <select id="gif-width">
+                <option value="320">320px (Small)</option>
+                <option value="480">480px (Medium)</option>
+                <option value="640" selected>640px (Large)</option>
+                <option value="800">800px (Extra Large)</option>
+              </select>
+            </div>
+            
+            <div class="setting-row">
+              <label for="gif-range">Time Range</label>
+              <div class="range-inputs">
+                <input type="number" id="gif-start" placeholder="Start (s)" min="0" step="0.1" class="form-input form-input-sm">
+                <span>to</span>
+                <input type="number" id="gif-end" placeholder="End (s)" min="0" step="0.1" class="form-input form-input-sm">
+              </div>
+            </div>
+            
+            <div class="setting-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="gif-loop" checked>
+                <span>Loop GIF</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Thumbnail Export Options -->
+          <div id="export-thumbnail-options" class="export-section hidden">
+            <div class="thumbnail-preview-container">
+              <img id="thumbnail-preview" class="thumbnail-preview" alt="Thumbnail preview">
+              <div class="thumbnail-controls">
+                <button id="thumbnail-prev" class="btn btn-icon" title="Previous frame">◀</button>
+                <input type="range" id="thumbnail-seek" min="0" max="100" value="50" class="thumbnail-seek">
+                <button id="thumbnail-next" class="btn btn-icon" title="Next frame">▶</button>
+              </div>
+            </div>
+            
+            <div class="setting-row">
+              <label for="thumbnail-preset">Size</label>
+              <select id="thumbnail-preset">
+                <option value="youtube">YouTube (1280×720)</option>
+                <option value="twitter">Twitter (1200×675)</option>
+                <option value="linkedin">LinkedIn (1200×627)</option>
+                <option value="custom">Custom Size</option>
+              </select>
+            </div>
+            
+            <div class="setting-row" id="thumbnail-custom-size" style="display: none;">
+              <label>Custom Dimensions</label>
+              <div class="dimension-inputs">
+                <input type="number" id="thumbnail-width" placeholder="Width" class="form-input form-input-sm">
+                <span>×</span>
+                <input type="number" id="thumbnail-height" placeholder="Height" class="form-input form-input-sm">
+              </div>
+            </div>
+            
+            <details class="export-advanced">
+              <summary>Branding Options</summary>
+              <div class="setting-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="thumbnail-add-title">
+                  <span>Add Title Overlay</span>
+                </label>
+              </div>
+              <div class="setting-row" id="thumbnail-title-input" style="display: none;">
+                <input type="text" id="thumbnail-title-text" placeholder="Enter title text" class="form-input">
+              </div>
+              <div class="setting-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="thumbnail-add-logo">
+                  <span>Add Logo</span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <label for="thumbnail-format">Format</label>
+                <select id="thumbnail-format">
+                  <option value="jpg">JPEG (Smaller)</option>
+                  <option value="png" selected>PNG (Lossless)</option>
+                  <option value="webp">WebP (Modern)</option>
+                </select>
+              </div>
+            </details>
+          </div>
+          
+          <!-- Export Progress -->
+          <div id="export-progress" class="export-progress hidden">
+            <div class="progress-bar-container">
+              <div id="export-progress-bar" class="progress-bar"></div>
+            </div>
+            <span id="export-status">Rendering...</span>
           </div>
         </div>
-        <div id="export-progress" class="export-progress hidden">
-          <div class="progress-bar-container">
-            <div id="export-progress-bar" class="progress-bar"></div>
-          </div>
-          <span id="export-status">Rendering...</span>
-        </div>
-        <div class="modal-actions">
+        
+        <div class="modal-footer">
           <button id="cancel-export" class="btn btn-secondary">Cancel</button>
           <button id="start-export" class="btn btn-primary">
             <span class="icon">🎬</span> Export
