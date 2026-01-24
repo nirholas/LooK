@@ -341,6 +341,135 @@ export const API = {
    */
   getDownloadUrl(projectId) {
     return `/api/download/${projectId}`;
+  },
+
+  // ============================================================
+  // GIF Export API
+  // ============================================================
+
+  /**
+   * Export video as GIF
+   * @param {string} projectId - Project ID
+   * @param {Object} options - GIF export options
+   * @returns {Promise<{success: boolean, outputPath: string, size: number}>}
+   */
+  exportGif(projectId, options = {}) {
+    return request('POST', `/api/project/${projectId}/gif`, {
+      width: options.width || 640,
+      fps: options.fps || 15,
+      quality: options.quality || 'medium',
+      startTime: options.startTime,
+      endTime: options.endTime,
+      loop: options.loop !== false
+    }, { timeout: 300000 }); // 5 min timeout
+  },
+
+  /**
+   * Get GIF download URL
+   * @param {string} projectId - Project ID
+   * @returns {string} GIF download URL
+   */
+  getGifUrl(projectId) {
+    return `/api/project/${projectId}/gif/download`;
+  },
+
+  // ============================================================
+  // Thumbnail API
+  // ============================================================
+
+  /**
+   * Generate thumbnail from video
+   * @param {string} projectId - Project ID
+   * @param {Object} options - Thumbnail options
+   * @returns {Promise<{success: boolean, thumbnailUrl: string}>}
+   */
+  generateThumbnail(projectId, options = {}) {
+    return request('POST', `/api/project/${projectId}/thumbnail`, {
+      timestamp: options.timestamp,
+      preset: options.preset || 'youtube',
+      width: options.width,
+      height: options.height,
+      format: options.format || 'png',
+      addTitle: options.addTitle,
+      titleText: options.titleText,
+      addLogo: options.addLogo,
+      logoUrl: options.logoUrl
+    });
+  },
+
+  /**
+   * Get auto-selected best thumbnail
+   * @param {string} projectId - Project ID
+   * @returns {Promise<{thumbnailUrl: string, timestamp: number, score: number}>}
+   */
+  getAutoThumbnail(projectId) {
+    return request('GET', `/api/project/${projectId}/thumbnail/auto`);
+  },
+
+  // ============================================================
+  // Overlays API
+  // ============================================================
+
+  /**
+   * Get project overlays (lower thirds, callouts, etc.)
+   * @param {string} projectId - Project ID
+   * @returns {Promise<{overlays: Array}>}
+   */
+  getOverlays(projectId) {
+    return request('GET', `/api/project/${projectId}/overlays`);
+  },
+
+  /**
+   * Update project overlays
+   * @param {string} projectId - Project ID
+   * @param {Object} overlays - Overlay configuration
+   * @returns {Promise<{success: boolean}>}
+   */
+  updateOverlays(projectId, overlays) {
+    return request('PUT', `/api/project/${projectId}/overlays`, overlays);
+  },
+
+  /**
+   * Add a callout annotation
+   * @param {string} projectId - Project ID
+   * @param {Object} callout - Callout data
+   * @returns {Promise<{success: boolean, calloutId: string}>}
+   */
+  addCallout(projectId, callout) {
+    return request('POST', `/api/project/${projectId}/callouts`, callout);
+  },
+
+  /**
+   * Delete a callout
+   * @param {string} projectId - Project ID
+   * @param {string} calloutId - Callout ID
+   * @returns {Promise<{success: boolean}>}
+   */
+  deleteCallout(projectId, calloutId) {
+    return request('DELETE', `/api/project/${projectId}/callouts/${calloutId}`);
+  },
+
+  // ============================================================
+  // Scene Transitions API
+  // ============================================================
+
+  /**
+   * Get scene transitions
+   * @param {string} projectId - Project ID
+   * @returns {Promise<{transitions: Array}>}
+   */
+  getTransitions(projectId) {
+    return request('GET', `/api/project/${projectId}/transitions`);
+  },
+
+  /**
+   * Update scene transitions
+   * @param {string} projectId - Project ID
+   * @param {Array} transitions - Transition configurations
+   * @returns {Promise<{success: boolean}>}
+   */
+  updateTransitions(projectId, transitions) {
+    return request('PUT', `/api/project/${projectId}/transitions`, { transitions });
   }
 };
 

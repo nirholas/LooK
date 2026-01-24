@@ -371,7 +371,13 @@ async function captureHomepage(url) {
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process']
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process'
+    ]
   });
   
   try {

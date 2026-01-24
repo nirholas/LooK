@@ -44,7 +44,14 @@ export class MultiPageRecorder {
 
     this.browser = await chromium.launch({
       headless: true,
-      args: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process'
+      ]
     });
 
     this.page = await this.browser.newPage({

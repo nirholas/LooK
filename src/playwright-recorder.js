@@ -17,7 +17,13 @@ export async function recordWithPlaywright(url, actions = [], options = {}) {
   const clickLog = []; // Track clicks for zoom post-processing
 
   const browser = await chromium.launch({
-    headless: true
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu'
+    ]
   });
 
   const context = await browser.newContext({
@@ -117,7 +123,15 @@ export async function smartScroll(url, options = {}) {
   const tempDir = join(tmpdir(), `repovideo-scroll-${Date.now()}`);
   await mkdir(tempDir, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu'
+    ]
+  });
   const context = await browser.newContext({
     viewport: { width, height },
     recordVideo: { dir: tempDir, size: { width, height } }

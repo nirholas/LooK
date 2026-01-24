@@ -575,7 +575,15 @@ program
       process.stdout.write('  Playwright browser: ');
       try {
         const { chromium } = await import('playwright');
-        const browser = await chromium.launch({ headless: true });
+        const browser = await chromium.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
+          ]
+        });
         await browser.close();
         console.log(chalk.green('✓'));
       } catch (e) {
@@ -818,6 +826,284 @@ program
       await installApk(apk);
     } catch (e) {
       console.error(chalk.red('\n❌ Error:'), e.message);
+      process.exit(1);
+    }
+  });
+
+// GIF: Export video as high-quality GIF
+program
+  .command('gif <input>')
+  .description('Export a video as a high-quality optimized GIF')
+  .option('-o, --output <path>', 'Output GIF path', './output.gif')
+  .option('-w, --width <pixels>', 'Output width (height auto-scaled)', '640')
+  .option('-f, --fps <fps>', 'Frame rate (10-30)', '15')
+  .option('-q, --quality <quality>', 'Quality: high, medium, low', 'medium')
+  .option('-s, --start <seconds>', 'Start time in seconds', '0')
+  .option('-e, --end <seconds>', 'End time in seconds (default: full video)')
+  .option('--no-loop', 'Disable looping')
+  .option('--colors <n>', 'Max colors in palette (64-256)', '256')
+  .option('--dither <mode>', 'Dithering: none, bayer, floyd_steinberg', 'floyd_steinberg')
+  .action(async (input, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('🎞️  GIF Export\n'));
+    
+    try {
+      const { GifExporter } = await import('../src/v2/gif-export.js');
+      const { resolve } = await import('path');
+      
+      const exporter = new GifExporter({
+        width: parseInt(options.width),
+        fps: parseInt(options.fps),
+        quality: options.quality,
+        maxColors: parseInt(options.colors),
+        dithering: options.dither,
+        loop: options.loop !== false
+      });
+      
+      console.log(chalk.dim(`  Input: ${input}`));
+      console.log(chalk.dim(`  Output: ${options.output}`));
+      console.log(chalk.dim(`  Size: ${options.width}px @ ${options.fps}fps`));
+      console.log(chalk.dim(`  Quality: ${options.quality}\n`));
+      
+      const result = await exporter.export(resolve(input), resolve(options.output), {
+        startTime: parseFloat(options.start),
+        endTime: options.end ? parseFloat(options.end) : undefined
+      });
+      
+      console.log(chalk.green('\n  ✅ GIF exported!'));
+      console.log(chalk.dim(`  File size: ${(result.size / 1024 / 1024).toFixed(2)} MB`));
+      console.log(chalk.dim(`  Dimensions: ${result.width}x${result.height}`));
+      console.log(chalk.dim(`  Duration: ${result.duration.toFixed(1)}s\n`));
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
+      process.exit(1);
+    }
+  });
+
+// Thumbnail: Generate thumbnail from video
+program
+  .command('thumbnail <input>')
+  .description('Generate a thumbnail from a video at a specific timestamp')
+  .option('-o, --output <path>', 'Output image path', './thumbnail.png')
+  .option('-t, --timestamp <seconds>', 'Timestamp to capture (default: auto-select best frame)')
+  .option('-p, --preset <preset>', 'Size preset: youtube, twitter, linkedin, instagram', 'youtube')
+  .option('-w, --width <pixels>', 'Custom width (overrides preset)')
+  .option('-h, --height <pixels>', 'Custom height (overrides preset)')
+  .option('-f, --format <format>', 'Output format: png, jpg, webp', 'png')
+  .option('--title <text>', 'Add title overlay')
+  .option('--title-position <pos>', 'Title position: top, center, bottom', 'center')
+  .option('--logo <path>', 'Add logo from file')
+  .option('--logo-position <pos>', 'Logo position: top-left, top-right, bottom-left, bottom-right', 'bottom-right')
+  .option('--auto', 'Auto-select best frame using AI analysis')
+  .action(async (input, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('🖼️  Thumbnail Generator\n'));
+    
+    try {
+      const { AutoThumbnailGenerator } = await import('../src/v2/auto-thumbnail.js');
+      const { resolve } = await import('path');
+      
+      const generator = new AutoThumbnailGenerator();
+      
+      console.log(chalk.dim(`  Input: ${input}`));
+      console.log(chalk.dim(`  Output: ${options.output}`));
+      console.log(chalk.dim(`  Preset: ${options.preset}`));
+      
+      let timestamp = options.timestamp ? parseFloat(options.timestamp) : undefined;
+      
+      // Auto-select best frame if requested
+      if (options.auto || !timestamp) {
+        console.log(chalk.dim('  Analyzing video for best frame...'));
+        const analysis = await generator.analyzeVideo(resolve(input));
+        timestamp = analysis.bestTimestamp;
+        console.log(chalk.dim(`  Selected timestamp: ${timestamp.toFixed(2)}s (score: ${analysis.score.toFixed(2)})`));
+      }
+      
+      const result = await generator.generate(resolve(input), resolve(options.output), {
+        timestamp,
+        preset: options.preset,
+        width: options.width ? parseInt(options.width) : undefined,
+        height: options.height ? parseInt(options.height) : undefined,
+        format: options.format,
+        title: options.title,
+        titlePosition: options.titlePosition,
+        logoPath: options.logo ? resolve(options.logo) : undefined,
+        logoPosition: options.logoPosition
+      });
+      
+      console.log(chalk.green('\n  ✅ Thumbnail generated!'));
+      console.log(chalk.dim(`  Dimensions: ${result.width}x${result.height}`));
+      console.log(chalk.dim(`  Format: ${options.format.toUpperCase()}\n`));
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
+      process.exit(1);
+    }
+  });
+
+// Overlay: Add overlays to an existing video
+program
+  .command('overlay <input>')
+  .description('Add professional overlays to a video (lower thirds, captions, callouts)')
+  .option('-o, --output <path>', 'Output video path', './output-overlay.mp4')
+  .option('--lower-third <name:title>', 'Add lower third with name and title')
+  .option('--lower-third-style <style>', 'Lower third style: modern, classic, minimal, gradient, broadcast', 'modern')
+  .option('--lower-third-start <seconds>', 'Lower third start time', '2')
+  .option('--lower-third-duration <seconds>', 'Lower third display duration', '5')
+  .option('--captions <srt>', 'Path to SRT subtitle file')
+  .option('--caption-style <style>', 'Caption style: standard, karaoke, pop, typewriter', 'standard')
+  .option('--keyboard-visual', 'Show keyboard shortcut visualizations')
+  .option('--keyboard-style <style>', 'Keyboard style: mac, windows, minimal, dark', 'mac')
+  .option('--transition <type>', 'Add transitions: fade, blur, slide, zoom, wipe', 'none')
+  .option('--transition-duration <seconds>', 'Transition duration', '0.5')
+  .action(async (input, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('✨ Video Overlay Processor\n'));
+    
+    try {
+      const { resolve } = await import('path');
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      
+      console.log(chalk.dim(`  Input: ${input}`));
+      console.log(chalk.dim(`  Output: ${options.output}\n`));
+      
+      let currentInput = resolve(input);
+      let tempFiles = [];
+      
+      // Add lower third if specified
+      if (options.lowerThird) {
+        console.log(chalk.dim('  Adding lower third...'));
+        const { LowerThirdsRenderer } = await import('../src/v2/lower-thirds.js');
+        
+        const [name, title] = options.lowerThird.split(':');
+        const renderer = new LowerThirdsRenderer({
+          name,
+          title: title || '',
+          style: options.lowerThirdStyle
+        });
+        
+        const tempOutput = `/tmp/look-lt-${Date.now()}.mp4`;
+        await renderer.applyToVideo(currentInput, tempOutput, {
+          startTime: parseFloat(options.lowerThirdStart),
+          duration: parseFloat(options.lowerThirdDuration)
+        });
+        
+        tempFiles.push(currentInput !== resolve(input) ? currentInput : null);
+        currentInput = tempOutput;
+        tempFiles.push(tempOutput);
+        console.log(chalk.green('  ✓ Lower third added'));
+      }
+      
+      // Add captions if specified
+      if (options.captions) {
+        console.log(chalk.dim('  Adding captions...'));
+        const { AnimatedCaptionsRenderer } = await import('../src/v2/animated-captions.js');
+        const { readFile } = await import('fs/promises');
+        
+        const srtContent = await readFile(resolve(options.captions), 'utf-8');
+        const renderer = new AnimatedCaptionsRenderer({
+          style: options.captionStyle
+        });
+        
+        const tempOutput = `/tmp/look-cap-${Date.now()}.mp4`;
+        await renderer.applyToVideo(currentInput, tempOutput, srtContent);
+        
+        tempFiles.push(currentInput);
+        currentInput = tempOutput;
+        tempFiles.push(tempOutput);
+        console.log(chalk.green('  ✓ Captions added'));
+      }
+      
+      // Add transitions if specified
+      if (options.transition && options.transition !== 'none') {
+        console.log(chalk.dim('  Adding transitions...'));
+        const { SceneTransitionRenderer } = await import('../src/v2/scene-transitions.js');
+        
+        const renderer = new SceneTransitionRenderer({
+          type: options.transition,
+          duration: parseFloat(options.transitionDuration)
+        });
+        
+        const tempOutput = `/tmp/look-trans-${Date.now()}.mp4`;
+        await renderer.addIntroTransition(currentInput, tempOutput);
+        
+        tempFiles.push(currentInput);
+        currentInput = tempOutput;
+        tempFiles.push(tempOutput);
+        console.log(chalk.green('  ✓ Transitions added'));
+      }
+      
+      // Copy to final output
+      const { copyFile, unlink } = await import('fs/promises');
+      await copyFile(currentInput, resolve(options.output));
+      
+      // Cleanup temp files
+      for (const file of tempFiles) {
+        if (file) {
+          try { await unlink(file); } catch {}
+        }
+      }
+      
+      console.log(chalk.green('\n  ✅ Overlay processing complete!'));
+      console.log(chalk.dim(`  Output: ${options.output}\n`));
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
+      process.exit(1);
+    }
+  });
+
+// Captions: Generate animated captions from audio/video
+program
+  .command('captions <input>')
+  .description('Generate animated captions from video audio (requires transcription)')
+  .option('-o, --output <path>', 'Output SRT file path', './captions.srt')
+  .option('-s, --style <style>', 'Caption style: standard, karaoke, pop, typewriter', 'standard')
+  .option('--language <lang>', 'Transcription language', 'en')
+  .option('--apply <video>', 'Apply captions directly to a video')
+  .action(async (input, options) => {
+    console.log(chalk.magenta(banner));
+    console.log(chalk.cyan('💬 Caption Generator\n'));
+    
+    try {
+      const { resolve } = await import('path');
+      console.log(chalk.dim(`  Input: ${input}`));
+      console.log(chalk.dim(`  Style: ${options.style}`));
+      
+      // For now, show instructions since we need OpenAI Whisper API
+      console.log(chalk.yellow('\n  ⚠ Caption generation requires OpenAI Whisper API'));
+      console.log(chalk.dim('  Set OPENAI_API_KEY environment variable to enable\n'));
+      
+      if (process.env.OPENAI_API_KEY) {
+        const { AnimatedCaptionsRenderer } = await import('../src/v2/animated-captions.js');
+        const renderer = new AnimatedCaptionsRenderer({ style: options.style });
+        
+        console.log(chalk.dim('  Transcribing audio...'));
+        const srt = await renderer.transcribeVideo(resolve(input));
+        
+        const { writeFile } = await import('fs/promises');
+        await writeFile(resolve(options.output), srt);
+        
+        console.log(chalk.green('\n  ✅ Captions generated!'));
+        console.log(chalk.dim(`  Output: ${options.output}\n`));
+        
+        if (options.apply) {
+          console.log(chalk.dim('  Applying captions to video...'));
+          const outVideo = options.apply.replace(/\.[^.]+$/, '-captioned.mp4');
+          await renderer.applyToVideo(resolve(options.apply), resolve(outVideo), srt);
+          console.log(chalk.green(`  ✅ Captioned video: ${outVideo}\n`));
+        }
+      }
+      
+    } catch (e) {
+      console.error(chalk.red('\n❌ Error:'), e.message);
+      if (process.env.DEBUG) console.error(e.stack);
       process.exit(1);
     }
   });

@@ -3787,6 +3787,246 @@ body {
   font-size: 13px;
 }
 
+/* ============================================================
+   Export Modal Enhanced
+   ============================================================ */
+
+.export-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: var(--bg-primary);
+  border-radius: var(--radius);
+}
+
+.export-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.export-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
+.export-section {
+  animation: fadeIn 0.2s ease;
+}
+
+.export-section.hidden {
+  display: none;
+}
+
+.export-advanced {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+}
+
+.export-advanced summary {
+  padding: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.export-advanced[open] {
+  padding-bottom: 12px;
+}
+
+.export-advanced[open] summary {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.export-advanced .setting-row {
+  padding: 0 12px;
+}
+
+/* GIF Export */
+.gif-preview-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 16px;
+  border: 1px dashed var(--border);
+}
+
+.gif-preview {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gif-preview img {
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.preview-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-inputs input {
+  flex: 1;
+}
+
+.range-inputs span {
+  color: var(--text-muted);
+}
+
+/* Thumbnail Export */
+.thumbnail-preview-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+
+.thumbnail-preview {
+  max-width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.thumbnail-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.thumbnail-seek {
+  flex: 1;
+}
+
+.dimension-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dimension-inputs input {
+  flex: 1;
+}
+
+.dimension-inputs span {
+  color: var(--text-muted);
+}
+
+/* Lower Thirds Settings */
+.settings-lower-thirds,
+.settings-keyboard,
+.settings-callouts,
+.settings-transitions {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  margin-top: 12px;
+}
+
+.settings-lower-thirds summary,
+.settings-keyboard summary,
+.settings-callouts summary,
+.settings-transitions summary {
+  cursor: pointer;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-lower-thirds summary h4,
+.settings-keyboard summary h4,
+.settings-callouts summary h4,
+.settings-transitions summary h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.settings-lower-thirds[open],
+.settings-keyboard[open],
+.settings-callouts[open],
+.settings-transitions[open] {
+  padding-bottom: 12px;
+}
+
+.settings-lower-thirds[open] summary,
+.settings-keyboard[open] summary,
+.settings-callouts[open] summary,
+.settings-transitions[open] summary {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.settings-lower-thirds .setting-row,
+.settings-keyboard .setting-row,
+.settings-callouts .setting-row,
+.settings-transitions .setting-row {
+  padding: 0 12px;
+}
+
+/* Callout Tools */
+.callout-tools {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.callout-tool {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.callout-tool:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+}
+
+.callout-tool.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 @media (max-width: 900px) {
   .templates-page {
     padding: 20px;

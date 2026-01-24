@@ -14,6 +14,13 @@ import { DemoEngine, checkDependencies } from './demo-engine.js';
 import { getCursorPreset, CURSOR_PRESETS } from './cursor-renderer.js';
 // Enhanced AI module with advanced capabilities
 import * as aiEnhanced from './ai-enhanced.js';
+// Intelligent demo modules
+import { ProductIntelligence, extractProductDNA, PRODUCT_CATEGORIES } from './product-intelligence.js';
+import { WorkflowDetector, detectWorkflows, WORKFLOW_PATTERNS } from './workflow-detector.js';
+import { VisualMomentDetector, detectVisualMoments, MOMENT_TYPES } from './visual-moments.js';
+import { SmartComposer, composeDemo, STORY_ARCS, PACING_STYLES } from './smart-composer.js';
+import { QualityScorer, scoreDemo, QUALITY_CRITERIA, QUALITY_GRADES } from './quality-scorer.js';
+import { IntelligentOrchestrator, generateIntelligentDemo, quickDemo } from './intelligent-orchestrator.js';
 // Multi-page and mobile imports are lazy-loaded to avoid requiring dependencies when not used
 // import { generateMultiPageDemo } from './multi-page-recorder.js';
 // import { MobileRecorder } from './mobile-recorder.js';
@@ -146,7 +153,15 @@ export async function generateDemo(url, options = {}) {
     if (!skipAnalysis) {
       spinner.start('Analyzing website with AI vision...');
       
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      });
       const page = await browser.newPage({ viewport: { width, height } });
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
       
@@ -661,7 +676,15 @@ export async function generateDemoV2(url, options = {}) {
       spinner.start('Analyzing website with AI vision...');
       
       // Quick screenshot for analysis
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      });
       const page = await browser.newPage({ viewport: { width, height } });
       
       try {
@@ -953,3 +976,66 @@ export {
   syncVoiceWithActions,
   suggestBackgroundMusic
 } from './voice-enhancer.js';
+
+// v2.2 Features - Intelligent Demo Generation (NEW)
+export {
+  ProductIntelligence,
+  extractProductDNA,
+  enrichProductDNA,
+  analyzeProductCategory,
+  PRODUCT_CATEGORIES
+} from './product-intelligence.js';
+
+export {
+  WorkflowDetector,
+  detectWorkflows,
+  getBestDemoWorkflow,
+  WORKFLOW_PATTERNS
+} from './workflow-detector.js';
+
+export {
+  VisualMomentDetector,
+  detectVisualMoments,
+  getBestVisualMoments,
+  detectMomentsWithAI,
+  MOMENT_TYPES
+} from './visual-moments.js';
+
+export {
+  SmartComposer,
+  composeDemo,
+  getRecommendedArc,
+  STORY_ARCS,
+  PACING_STYLES
+} from './smart-composer.js';
+
+export {
+  QualityScorer,
+  scoreDemo,
+  meetsQualityThreshold,
+  quickAssess,
+  QUALITY_CRITERIA,
+  QUALITY_GRADES
+} from './quality-scorer.js';
+
+export {
+  IntelligentOrchestrator,
+  generateIntelligentDemo as generateSmartDemo,
+  quickDemo
+} from './intelligent-orchestrator.js';
+
+// v2.2 Features - Demo Templates
+export {
+  TemplateCategory,
+  DEMO_TEMPLATES,
+  getAllTemplates,
+  getTemplate,
+  getTemplatesByCategory,
+  searchTemplates,
+  getCategories,
+  applyTemplate,
+  suggestTemplates,
+  createCustomTemplate,
+  exportTemplate,
+  importTemplate
+} from './templates.js';
