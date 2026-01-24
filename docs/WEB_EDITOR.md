@@ -1,6 +1,6 @@
 # Web Editor Guide
 
-The LooK web editor provides a visual interface for fine-tuning your demo videos before export.
+The LooK web editor provides a visual interface for creating and editing demo videos with enterprise-grade features.
 
 ## Starting the Editor
 
@@ -22,21 +22,25 @@ look serve --no-open
 
 ## Interface Overview
 
+### Header Navigation
+
+The header includes:
+- **Logo** - L👀K Studio branding
+- **Navigation** - Editor, Templates, Docs tabs
+- **API Status** - Visual indicator showing API connection status
+- **Settings** - Configure API keys and preferences
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  L👀K Editor                                     [Export]   │
+│  L👀K Studio    Editor | Templates | Docs      [API] [⚙️]  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │                     Preview Canvas                          │
 │                                                             │
-│                                                             │
 ├─────────────────────────────────────────────────────────────┤
 │  ◀ ▶ ⏸  [0:00 / 0:25]  ━━━━━━━●━━━━━━━━━━━━━━━━  🔊      │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Timeline Track                                             │
-│  [━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━]  │
-│                                                             │
+│                     Timeline Track                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -45,23 +49,79 @@ look serve --no-open
 1. **Preview Canvas** - Real-time preview of your demo
 2. **Playback Controls** - Play, pause, scrub through video
 3. **Timeline** - Visual editing of clips, effects, and zoom
+4. **Sidebar** - Script editor, markers, and settings tabs
+
+## First-Run Onboarding
+
+When you first open the editor, a guided tour highlights key features:
+
+1. **URL Input** - Where to enter your website URL
+2. **Templates** - Pre-built demo configurations
+3. **Settings** - API key configuration
+4. **Export** - Export your finished demo
+
+You can restart the tour from Settings → About → "Restart Tour".
+
+## Settings & API Configuration
+
+Click the **⚙️ Settings** button or the **API Status** indicator to open settings.
+
+### API Keys Tab
+
+Configure your AI service credentials:
+
+| Service | Purpose | Required |
+|---------|---------|----------|
+| OpenAI | GPT-4 Vision analysis, voiceover | Yes |
+| Groq | Alternative for script generation | Optional |
+
+API keys are stored securely in your browser's localStorage and sent with each API request.
+
+### Connection Status
+
+The settings panel shows real-time connection status:
+- 🟢 **Connected** - API key validated
+- 🟡 **Checking** - Validating connection
+- 🔴 **Error** - Connection failed
+- ⚫ **Not configured** - No API key set
+
+### Preferences Tab
+
+| Setting | Description |
+|---------|-------------|
+| Theme | Dark (default) |
+| Default Voice | Voice for AI voiceover |
+| Auto-save | Automatically save projects |
+
+## Templates
+
+Access pre-built demo configurations from the **Templates** tab:
+
+| Template | Best For |
+|----------|----------|
+| SaaS Landing | Product pages, feature tours |
+| E-commerce | Product catalogs, cart flows |
+| Portfolio | Creative work, case studies |
+| Documentation | API docs, developer guides |
+| Mobile App | iOS/Android app showcases |
+| Dashboard | Analytics, admin interfaces |
+
+Click a template to apply its optimized settings, then enter your URL to start.
 
 ## Creating a New Project
 
 ### From URL
 
-1. Click **New Project**
-2. Enter your website URL
-3. Configure initial settings:
-   - Duration
-   - Voice
-   - Style
-4. Click **Record**
+1. Enter your website URL in the input field
+2. Click **Generate Demo** for AI-automated recording
+3. Or click **Live Record** for manual control
 
-### From Existing Recording
+### From Templates
 
-1. Drag & drop a recording file into the editor
-2. Or use File → Open Recording
+1. Click **Templates** in the header
+2. Select a template that matches your use case
+3. Enter your URL
+4. Click **Generate Demo**
 
 ## Timeline Editing
 
@@ -138,36 +198,40 @@ The timeline shows cursor movement as a path. You can:
 
 ## Keyboard Shortcuts
 
+Press `Shift + ?` to view all keyboard shortcuts in the editor.
+
 ### Playback
 
 | Shortcut | Action |
 |----------|--------|
 | `Space` | Play/Pause |
-| `←` / `→` | Seek 1 second |
-| `Shift + ←/→` | Seek 1 frame |
+| `K` | Play/Pause (alt) |
+| `←` / `→` | Seek 5 seconds |
+| `J` / `L` | Seek 10 seconds |
+| `,` / `.` | Previous/Next frame |
 | `Home` | Go to start |
 | `End` | Go to end |
-| `L` | Speed up playback |
-| `J` | Slow down playback |
 
 ### Editing
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl/Cmd + Z` | Undo |
-| `Ctrl/Cmd + Shift + Z` | Redo |
 | `Ctrl/Cmd + S` | Save project |
-| `Delete` | Delete selected keyframe |
-| `Ctrl/Cmd + C` | Copy keyframe |
-| `Ctrl/Cmd + V` | Paste keyframe |
+| `Ctrl/Cmd + E` | Export video |
+| `Ctrl/Cmd + N` | New project |
+| `M` | Add marker at current time |
+| `[` / `]` | Jump to previous/next marker |
 
-### Zoom
+### View
 
 | Shortcut | Action |
 |----------|--------|
-| `+` | Zoom in timeline |
-| `-` | Zoom out timeline |
-| `0` | Fit timeline to view |
+| `F` | Toggle fullscreen |
+| `Escape` | Exit fullscreen / Close modal |
+| `1` | Script tab |
+| `2` | Markers tab |
+| `3` | Settings tab |
+| `Shift + /` | Show keyboard shortcuts |
 
 ### Navigation
 

@@ -8,13 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Enterprise Web Editor UI**: Complete redesign with professional SaaS polish
+  - First-run onboarding tour with 4-step guided walkthrough
+  - Settings modal with API key management and validation
+  - Real-time API connection status indicators
+  - Header navigation with Editor, Templates, and Docs tabs
+  - Templates page with 6 pre-built demo configurations
+  - Built-in documentation accessible from the editor
+  - Loading overlay with status messages
+  - Keyboard shortcuts help modal (`Shift + ?`)
+- Enhanced keyboard shortcuts:
+  - `K` - Alternative play/pause
+  - `J/L` - Seek 10 seconds backward/forward
+  - `M` - Add marker at current time
+  - `[/]` - Jump between markers
+  - `1/2/3` - Switch sidebar tabs
+  - `Ctrl+E` - Export video
+  - `Ctrl+N` - New project
+- Accessibility improvements:
+  - Skip to content link
+  - ARIA labels and roles
+  - Screen reader announcements
+  - Focus management
 - Comprehensive documentation in `docs/` folder
 - Example configurations in `examples/` folder
 - ROADMAP.md with future plans
 - CONTRIBUTING.md with contribution guidelines
 
 ### Changed
-- Updated README with badges and documentation links
+- Updated README with web editor features and setup instructions
+- Improved WEB_EDITOR.md with new UI documentation
+- Enhanced GETTING_STARTED.md with web UI API key setup instructions
 
 ## [2.0.0] - 2025-12-15
 

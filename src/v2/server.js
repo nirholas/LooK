@@ -88,6 +88,30 @@ export async function startServer(options = {}) {
   }
 
   // ============================================================
+  // Usage Metrics (in-memory for now)
+  // ============================================================
+  const metrics = {
+    startTime: Date.now(),
+    requests: 0,
+    projectsCreated: 0,
+    recordingsStarted: 0,
+    exportsCompleted: 0,
+    errors: 0,
+    apiCalls: {
+      analyze: 0,
+      record: 0,
+      render: 0,
+      import: 0
+    }
+  };
+
+  // Middleware to track requests
+  app.use((req, res, next) => {
+    metrics.requests++;
+    next();
+  });
+
+  // ============================================================
   // REST API Routes
   // ============================================================
 
@@ -98,9 +122,12 @@ export async function startServer(options = {}) {
     const checks = {
       status: 'ok',
       version: '2.0.0',
-      openai: !!process.env.OPENAI_API_KEY,
-      groq: !!process.env.GROQ_API_KEY,
-      playwright: false,
+      services: {
+        openai: process.env.OPENAI_API_KEY ? 'configured' : 'not-configured',
+        groq: process.env.GROQ_API_KEY ? 'configured' : 'not-configured',
+        playwright: 'unknown'
+      },
+      uptime: Math.floor((Date.now() - metrics.startTime) / 1000),
       timestamp: new Date().toISOString()
     };
     
@@ -110,15 +137,31 @@ export async function startServer(options = {}) {
         const { chromium } = await import('playwright');
         const browser = await chromium.launch({ headless: true });
         await browser.close();
-        checks.playwright = true;
+        checks.services.playwright = 'ready';
       } catch (e) {
+        checks.services.playwright = 'error';
         checks.playwrightError = e.message;
       }
-    } else {
-      checks.playwright = 'not-checked';
     }
     
     res.json(checks);
+  });
+
+  /**
+   * GET /api/stats - Get usage statistics (for enterprise dashboards)
+   */
+  app.get('/api/stats', (req, res) => {
+    res.json({
+      uptime: Math.floor((Date.now() - metrics.startTime) / 1000),
+      requests: metrics.requests,
+      projectsCreated: metrics.projectsCreated,
+      recordingsStarted: metrics.recordingsStarted,
+      exportsCompleted: metrics.exportsCompleted,
+      errors: metrics.errors,
+      apiCalls: { ...metrics.apiCalls },
+      activeConnections: clients.size,
+      activeLiveSessions: liveSessions.size
+    });
   });
 
   /**
@@ -176,6 +219,8 @@ export async function startServer(options = {}) {
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
+
+    metrics.apiCalls.import++;
     
     // Validate URL
     try {
@@ -243,7 +288,8 @@ export async function startServer(options = {}) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-
+    metrics.apiCalls.analyze++;
+    metrics.projectsCreated++;
     broadcast('status', { stage: 'analyzing', message: 'Analyzing website...' });
 
     try {
@@ -302,6 +348,8 @@ export async function startServer(options = {}) {
   app.post('/api/record', async (req, res) => {
     const { projectId, url, options = {} } = req.body;
 
+    metrics.apiCalls.record++;
+    metrics.recordingsStarted++;
     let project;
     
     try {
@@ -825,6 +873,8 @@ export async function startServer(options = {}) {
       return res.status(400).json({ error: 'projectId is required' });
     }
 
+    metrics.apiCalls.render++;
+
     try {
       const project = await Project.load(projectId);
 
@@ -844,9 +894,11 @@ export async function startServer(options = {}) {
         }
       });
 
+      metrics.exportsCompleted++;
       res.json({ success: true, outputPath: finalPath });
 
     } catch (error) {
+      metrics.errors++;
       broadcast('error', { message: error.message });
       res.status(500).json({ error: error.message });
     }
@@ -1009,6 +1061,97 @@ export async function startServer(options = {}) {
       console.error('Thumbnail generation failed:', error);
       res.status(500).json({ error: 'Failed to generate thumbnail: ' + error.message });
     }
+  });
+
+  /**
+   * POST /api/batch/export - Export multiple projects to different presets
+   * Enterprise feature for bulk exports
+   * 
+   * Body:
+   * - jobs: Array of { projectId, presets: ['youtube', 'twitter', ...] }
+   */
+  app.post('/api/batch/export', async (req, res) => {
+    const { jobs } = req.body;
+    
+    if (!jobs || !Array.isArray(jobs) || jobs.length === 0) {
+      return res.status(400).json({ error: 'jobs array is required' });
+    }
+    
+    if (jobs.length > 10) {
+      return res.status(400).json({ error: 'Maximum 10 jobs per batch' });
+    }
+    
+    const results = [];
+    let completed = 0;
+    
+    // Process jobs sequentially to avoid overwhelming the system
+    for (const job of jobs) {
+      const { projectId, presets = ['youtube'] } = job;
+      
+      try {
+        const project = await Project.load(projectId);
+        
+        if (!project.rawVideo) {
+          results.push({
+            projectId,
+            status: 'error',
+            error: 'No video to render'
+          });
+          continue;
+        }
+        
+        const exports = [];
+        
+        for (const preset of presets) {
+          const projectDir = project.getProjectDir();
+          const outputPath = join(projectDir, `export-${preset}-${Date.now()}.mp4`);
+          
+          await project.exportFinal(outputPath, {
+            preset,
+            onProgress: (progress) => {
+              broadcast('batch-progress', {
+                projectId,
+                preset,
+                progress,
+                completedJobs: completed,
+                totalJobs: jobs.length
+              });
+            }
+          });
+          
+          exports.push({ preset, outputPath });
+          metrics.exportsCompleted++;
+        }
+        
+        results.push({
+          projectId,
+          status: 'success',
+          exports
+        });
+        
+      } catch (error) {
+        metrics.errors++;
+        results.push({
+          projectId,
+          status: 'error',
+          error: error.message
+        });
+      }
+      
+      completed++;
+      broadcast('batch-progress', {
+        completedJobs: completed,
+        totalJobs: jobs.length
+      });
+    }
+    
+    res.json({
+      status: 'complete',
+      totalJobs: jobs.length,
+      successfulJobs: results.filter(r => r.status === 'success').length,
+      failedJobs: results.filter(r => r.status === 'error').length,
+      results
+    });
   });
 
   // ============================================================

@@ -92,6 +92,13 @@ export const API = {
   health() {
     return request('GET', '/api/health');
   },
+
+  /**
+   * Get server statistics (for enterprise dashboards)
+   */
+  getStats() {
+    return request('GET', '/api/stats');
+  },
   
   /**
    * List all projects
@@ -312,6 +319,28 @@ export const API = {
    */
   getYouTubeChapters(projectId) {
     return request('GET', `/api/project/${projectId}/chapters`);
+  },
+
+  // ============================================================
+  // Enterprise / Batch API
+  // ============================================================
+
+  /**
+   * Batch export multiple projects
+   * @param {Array<{projectId: string, presets: string[]}>} jobs - Export jobs
+   * @returns {Promise<{status: string, totalJobs: number, results: Array}>}
+   */
+  batchExport(jobs) {
+    return request('POST', '/api/batch/export', { jobs }, { timeout: 600000 }); // 10 min timeout
+  },
+
+  /**
+   * Get download URL for a project's final video
+   * @param {string} projectId - Project ID
+   * @returns {string} Download URL
+   */
+  getDownloadUrl(projectId) {
+    return `/api/download/${projectId}`;
   }
 };
 
