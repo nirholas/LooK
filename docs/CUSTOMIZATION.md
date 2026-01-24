@@ -476,3 +476,35 @@ look demo https://docs.myapp.com \
   --click-effect ring \
   --zoom-mode none
 ```
+
+---
+
+## Advanced Overlays & Effects
+
+For enterprise-grade polish, LooK offers additional overlay systems. See the dedicated guides:
+
+- **[Overlays & Effects Guide](./OVERLAYS_EFFECTS.md)** - Animated captions, lower thirds, spotlights, callouts, transitions
+- **[Export Formats Guide](./EXPORT_FORMATS.md)** - GIF export, thumbnail generation, platform presets
+- **[Intelligent Pipeline Guide](./INTELLIGENT_PIPELINE.md)** - AI orchestration, story arcs, quality scoring
+
+### Quick Reference
+
+```bash
+# Add animated captions (karaoke style)
+look captions video.mp4 --style karaoke --apply output.mp4
+
+# Add lower third overlay
+look overlay video.mp4 --lower-third "Name:Title" --lower-third-style modern -o output.mp4
+
+# Add scene transitions
+look overlay video.mp4 --transition blur --transition-duration 0.5 -o output.mp4
+
+# Export as GIF
+look gif video.mp4 --width 480 --fps 12 --quality medium -o demo.gif
+
+# Generate auto thumbnail
+look thumbnail video.mp4 --auto --preset youtube -o thumb.png
+
+# Full intelligent demo with story arc
+look demo https://myapp.com --intelligent --story-arc problem-solution --quality-threshold 80
+```

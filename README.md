@@ -32,6 +32,9 @@ That's it. You get a professional demo video in minutes.
 | [API Documentation](./docs/API.md) | Programmatic usage |
 | [Customization](./docs/CUSTOMIZATION.md) | Cursors, effects, zoom modes |
 | [Theme Presets](./docs/THEME_PRESETS.md) | Pre-built theme configurations |
+| [Overlays & Effects](./docs/OVERLAYS_EFFECTS.md) | Captions, lower thirds, spotlights |
+| [Export Formats](./docs/EXPORT_FORMATS.md) | GIF, thumbnail, platform presets |
+| [Intelligent Pipeline](./docs/INTELLIGENT_PIPELINE.md) | AI orchestration & story arcs |
 | [FAQ](./docs/FAQ.md) | Frequently asked questions |
 | [Troubleshooting](./docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
@@ -122,6 +125,25 @@ look walkthrough https://your-app.com --focus technical
 - **🖥️ Web Editor** - Enterprise-grade visual editing interface
 - **📋 Templates** - Pre-built configurations for common use cases
 
+### Enterprise Features
+
+- **🧠 Intelligent Orchestration** - 5-phase AI pipeline with quality scoring and auto-optimization
+- **📊 Product Intelligence** - Auto-detects product category, value props, and target audience
+- **🎭 Story Arcs** - 5 narrative templates: Problem→Solution, Feature Showcase, Journey, Before/After, Quick Demo
+- **⏱️ Smart Pacing** - Content-aware timing that syncs with voiceover
+- **🎬 Visual Moments** - Auto-detects animations, charts, forms for optimal capture
+- **🎙️ Voice Enhancement** - SSML generation, multi-voice support, emotion markers
+- **📝 Animated Captions** - Karaoke, pop, typewriter, fade subtitle styles
+- **🎨 Lower Thirds** - Professional name/title overlays with animations
+- **⌨️ Keyboard Visualizer** - Display shortcuts (Mac/Windows style)
+- **🔍 Spotlight & Callouts** - Focus attention with arrows, badges, highlights
+- **🎞️ Scene Transitions** - Fade, blur, slide, zoom between scenes
+- **🖼️ GIF Export** - High-quality palette-optimized GIF conversion
+- **📸 Auto Thumbnails** - AI-powered best frame selection
+- **💧 Watermarks** - Text or logo overlays with positioning
+- **📊 Progress Bars** - Visual timeline indicators
+- **🎬 Intro/Outro** - Animated branded intro and CTA outro cards
+
 ## Web Editor
 
 Start the visual editor for a more interactive experience:
@@ -202,6 +224,24 @@ look demo https://myapp.com --zoom-mode follow --zoom-intensity 0.8
 
 # Subtle, professional look
 look demo https://myapp.com --zoom-mode basic --max-zoom 1.3
+
+# Intelligent demo with AI orchestration
+look demo https://myapp.com --intelligent --story-arc problem-solution
+
+# Export as GIF for README
+look gif video.mp4 --width 480 --fps 12 -o demo.gif
+
+# Auto-generate YouTube thumbnail
+look thumbnail video.mp4 --auto --preset youtube -o thumb.png
+
+# Add animated captions
+look captions video.mp4 --style karaoke --apply output.mp4
+
+# Add lower third overlay
+look overlay video.mp4 --lower-third "John Smith:CEO" -o output.mp4
+
+# Batch process multiple sites
+look batch --config demos.yaml --concurrency 2
 ```
 
 ## 📱 Mobile App Recording

@@ -7,8 +7,10 @@ import Stripe from 'stripe';
 import { Router } from 'express';
 import { User, PlanLimits, UsageLog } from '../db/index.js';
 import { authMiddleware } from '../auth/middleware.js';
+import { createLogger } from '../v2/logger.js';
 
 const router = Router();
+const log = createLogger('billing-stripe');
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY 
@@ -133,7 +135,7 @@ router.post('/checkout', authMiddleware(), requireStripe, async (req, res) => {
       url: session.url
     });
   } catch (err) {
-    console.error('Checkout error:', err);
+    log.error('Checkout error', { error: err.message });
     res.status(500).json({
       error: 'Failed to create checkout session',
       code: 'CHECKOUT_ERROR',
@@ -161,7 +163,7 @@ router.post('/portal', authMiddleware(), requireStripe, async (req, res) => {
     
     res.json({ url: session.url });
   } catch (err) {
-    console.error('Portal error:', err);
+    log.error('Portal error', { error: err.message });
     res.status(500).json({
       error: 'Failed to create portal session',
       code: 'PORTAL_ERROR'
@@ -211,7 +213,7 @@ router.get('/subscription', authMiddleware(), requireStripe, async (req, res) =>
       plan
     });
   } catch (err) {
-    console.error('Get subscription error:', err);
+    log.error('Get subscription error', { error: err.message });
     res.status(500).json({
       error: 'Failed to get subscription',
       code: 'SUBSCRIPTION_ERROR'
@@ -255,7 +257,7 @@ router.post('/cancel', authMiddleware(), requireStripe, async (req, res) => {
       cancelAt: new Date(sub.current_period_end * 1000).toISOString()
     });
   } catch (err) {
-    console.error('Cancel subscription error:', err);
+    log.error('Cancel subscription error', { error: err.message });
     res.status(500).json({
       error: 'Failed to cancel subscription',
       code: 'CANCEL_ERROR'
@@ -284,7 +286,7 @@ router.post('/webhook', async (req, res) => {
       event = req.body;
     }
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    log.error('Webhook signature verification failed', { error: err.message });
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
   
@@ -293,7 +295,7 @@ router.post('/webhook', async (req, res) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        console.log('Checkout completed:', session.id);
+        log.info('Checkout completed', { sessionId: session.id });
         // Subscription is handled by subscription events
         break;
       }
@@ -314,7 +316,7 @@ router.post('/webhook', async (req, res) => {
             planPeriodEnd: periodEnd
           });
           
-          console.log(`Updated user ${userId} to ${plan} plan (${subscription.status})`);
+          log.info('Updated user plan', { userId, plan, status: subscription.status });
         }
         break;
       }
@@ -330,14 +332,14 @@ router.post('/webhook', async (req, res) => {
             planPeriodEnd: null
           });
           
-          console.log(`User ${userId} subscription canceled, reverted to free`);
+          log.info('User subscription canceled', { userId });
         }
         break;
       }
       
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object;
-        console.log('Payment succeeded:', invoice.id);
+        log.info('Payment succeeded', { invoiceId: invoice.id });
         // Could log to invoices table
         break;
       }
@@ -350,16 +352,16 @@ router.post('/webhook', async (req, res) => {
         const user = User.findByEmail(invoice.customer_email);
         if (user) {
           User.update(user.id, { planStatus: 'past_due' });
-          console.log(`User ${user.id} payment failed, marked past_due`);
+          log.warn('User payment failed', { userId: user.id, status: 'past_due' });
         }
         break;
       }
       
       default:
-        console.log(`Unhandled webhook event: ${event.type}`);
+        log.debug('Unhandled webhook event', { type: event.type });
     }
   } catch (err) {
-    console.error('Webhook handler error:', err);
+    log.error('Webhook handler error', { error: err.message });
     // Don't return error to Stripe - it will retry
   }
   

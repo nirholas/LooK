@@ -607,3 +607,180 @@ See the [examples/](../examples/) directory for complete examples:
 - [Mobile App](../examples/mobile-app/) - Mobile demo
 - [Batch Processing](../examples/batch/) - Multiple demos
 - [Custom Cursor](../examples/custom-cursor/) - Custom implementation
+
+---
+
+## Enterprise Modules
+
+### IntelligentOrchestrator
+
+Full AI-powered demo generation with quality scoring:
+
+```javascript
+import { IntelligentOrchestrator } from 'look-demo/v2';
+
+const orchestrator = new IntelligentOrchestrator({
+  style: 'professional',
+  autoOptimize: true,
+  qualityThreshold: 75,
+  storyArc: 'auto'
+});
+
+const result = await orchestrator.createDemo('https://myapp.com', {
+  duration: 30,
+  voice: 'nova'
+});
+
+console.log(`Quality: ${result.qualityScore.overall} (${result.qualityScore.grade})`);
+```
+
+### GifExporter
+
+Convert videos to optimized GIFs:
+
+```javascript
+import { GifExporter, GifQuality } from 'look-demo/v2';
+
+const exporter = new GifExporter({
+  width: 640,
+  fps: 15,
+  quality: GifQuality.MEDIUM
+});
+
+await exporter.export('video.mp4', 'output.gif', {
+  startTime: 5,
+  endTime: 15
+});
+```
+
+### AutoThumbnailGenerator
+
+Generate thumbnails with AI frame selection:
+
+```javascript
+import { AutoThumbnailGenerator } from 'look-demo/v2';
+
+const generator = new AutoThumbnailGenerator({ sampleCount: 20 });
+const analysis = await generator.analyzeVideo('video.mp4');
+
+await generator.generate('video.mp4', 'thumbnail.png', {
+  timestamp: analysis.bestTimestamp,
+  preset: 'youtube',
+  title: 'My Product Demo'
+});
+```
+
+### AnimatedCaptionsRenderer
+
+Add animated subtitles:
+
+```javascript
+import { AnimatedCaptionsRenderer, CaptionStyle } from 'look-demo/v2';
+
+const captions = new AnimatedCaptionsRenderer({
+  style: CaptionStyle.KARAOKE,
+  position: 'bottom',
+  fontSize: 48
+});
+
+const subtitles = captions.parseSRT(srtContent);
+await captions.applyToVideo('input.mp4', 'output.mp4', subtitles);
+```
+
+### LowerThirdsRenderer
+
+Professional name/title overlays:
+
+```javascript
+import { LowerThirdsRenderer, LowerThirdsStyle } from 'look-demo/v2';
+
+const lowerThird = new LowerThirdsRenderer({
+  name: 'John Smith',
+  title: 'Product Designer',
+  style: LowerThirdsStyle.MODERN
+});
+
+lowerThird.setDisplayTime(2, 7);
+await lowerThird.applyToVideo('input.mp4', 'output.mp4');
+```
+
+### SpotlightRenderer
+
+Focus attention on elements:
+
+```javascript
+import { SpotlightRenderer, SpotlightShape } from 'look-demo/v2';
+
+const spotlight = new SpotlightRenderer({
+  overlayOpacity: 0.7,
+  shape: SpotlightShape.ROUNDED_RECT
+});
+
+spotlight.addSpotlight({
+  x: 500, y: 400,
+  width: 200, height: 50,
+  startTime: 5, endTime: 10
+});
+```
+
+### SceneTransitionRenderer
+
+Professional scene transitions:
+
+```javascript
+import { SceneTransitionRenderer, TransitionType } from 'look-demo/v2';
+
+const transitions = new SceneTransitionRenderer({
+  type: TransitionType.BLUR,
+  duration: 0.5
+});
+
+await transitions.joinWithTransitions(
+  ['clip1.mp4', 'clip2.mp4', 'clip3.mp4'],
+  'output.mp4'
+);
+```
+
+### WatermarkGenerator
+
+Add text or logo watermarks:
+
+```javascript
+import { WatermarkGenerator } from 'look-demo/v2';
+
+const watermark = new WatermarkGenerator({
+  type: 'text',
+  text: 'MyCompany',
+  position: 'bottom-right',
+  opacity: 0.7
+});
+
+await watermark.apply('input.mp4', 'output.mp4');
+```
+
+### IntroOutroGenerator
+
+Create branded intro/outro cards:
+
+```javascript
+import { IntroOutroGenerator } from 'look-demo/v2';
+
+const generator = new IntroOutroGenerator({
+  theme: 'gradient',
+  brandColor: '#3B82F6'
+});
+
+await generator.createIntro('intro.mp4', {
+  title: 'MyApp',
+  tagline: 'Work smarter',
+  duration: 3
+});
+
+await generator.createOutro('outro.mp4', {
+  title: 'Get Started',
+  cta: 'Try Free',
+  duration: 4
+});
+```
+
+See [Intelligent Pipeline Guide](./INTELLIGENT_PIPELINE.md) and [Overlays & Effects Guide](./OVERLAYS_EFFECTS.md) for complete documentation.

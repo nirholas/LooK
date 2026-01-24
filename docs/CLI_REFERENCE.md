@@ -125,6 +125,44 @@ look demo https://myapp.com -o output.mp4 -d 30 -v nova
 | `--reliable` | Use V2 engine (more stable) | `false` |
 | `--dry-run` | Preview script without recording | `false` |
 
+#### Intelligent Pipeline Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--intelligent` | Enable full AI orchestration pipeline | `false` |
+| `--story-arc <arc>` | Narrative template (see below) | `auto` |
+| `--pacing <style>` | Pacing style | `standard` |
+| `--quality-threshold <0-100>` | Minimum quality score | `70` |
+| `--auto-optimize` | Re-optimize if below threshold | `true` |
+
+**Story Arc Templates:**
+- `auto` - AI selects best arc
+- `problem-solution` - Pain → Discovery → Solution → Results
+- `feature-showcase` - Feature 1 → Feature 2 → Feature 3
+- `journey` - Start → Explore → Achieve → Delight
+- `before-after` - Before state → Process → After state
+- `quick-demo` - Hook → Core value → CTA
+
+**Pacing Styles:**
+- `relaxed` - 0.7x speed, for tutorials
+- `standard` - 1.0x speed, general use
+- `dynamic` - 1.3x speed, feature showcases
+- `energetic` - 1.5x speed, social media
+
+#### Video Enhancement Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--watermark <text>` | Add text watermark | - |
+| `--watermark-image <path>` | Add logo watermark | - |
+| `--watermark-position <pos>` | Watermark position | `bottom-right` |
+| `--watermark-opacity <0-1>` | Watermark opacity | `0.7` |
+| `--progress-bar` | Add progress bar overlay | `false` |
+| `--progress-style <style>` | bar, line, dots, segments | `bar` |
+| `--intro` | Add animated intro card | `false` |
+| `--outro` | Add CTA outro card | `false` |
+| `--brand-color <hex>` | Brand color for intro/outro | `#3B82F6` |
+
 ---
 
 ## `look quick <url>`
@@ -387,6 +425,88 @@ look mobile-test [options]
 **Usage:**
 ```bash
 look devices
+```
+
+**Output:**
+```
+Supported Device Frames:
+
+iOS:
+  - iPhone 15 Pro Max (1290×2796)
+  - iPhone 15 Pro (1179×2556)
+  - iPhone 15 (1179×2556)
+  - iPhone SE (750×1334)
+  - iPad Pro 12.9" (2048×2732)
+  - iPad Pro 11" (1668×2388)
+
+Android:
+  - Pixel 8 Pro (1344×2992)
+  - Pixel 8 (1080×2400)
+  - Samsung Galaxy S24 Ultra (1440×3120)
+  - Samsung Galaxy S24 (1080×2340)
+```
+
+---
+
+## `look batch`
+
+**Description:** Process multiple demos from a configuration file.
+
+**Usage:**
+```bash
+look batch --config <path> [options]
+```
+
+**Example:**
+```bash
+look batch --config demos.yaml
+look batch --config demos.json --concurrency 2
+```
+
+### Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--config <path>` | Path to YAML or JSON config | (required) |
+| `--concurrency <n>` | Parallel jobs | `1` |
+| `--resume` | Resume from last checkpoint | `false` |
+| `--report <path>` | Output report path | `./batch-report.json` |
+
+### Configuration Format
+
+**YAML Example:**
+```yaml
+defaults:
+  duration: 30
+  voice: nova
+  preset: youtube
+
+jobs:
+  - url: https://app1.com
+    output: demos/app1.mp4
+    
+  - url: https://app2.com
+    output: demos/app2.mp4
+    duration: 45
+    voice: alloy
+    
+  - url: https://app3.com
+    output: demos/app3.mp4
+    preset: twitter
+```
+
+**JSON Example:**
+```json
+{
+  "defaults": {
+    "duration": 30,
+    "voice": "nova"
+  },
+  "jobs": [
+    {"url": "https://app1.com", "output": "demos/app1.mp4"},
+    {"url": "https://app2.com", "output": "demos/app2.mp4"}
+  ]
+}
 ```
 
 ---

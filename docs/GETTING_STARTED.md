@@ -269,6 +269,36 @@ npx playwright install chromium
 - 🎨 [Customization Guide](./CUSTOMIZATION.md) - Cursors, effects, zoom
 - 🌐 [Web Editor Guide](./WEB_EDITOR.md) - Visual editing interface
 - 🔧 [API Documentation](./API.md) - Programmatic usage
+- 🧠 [Intelligent Pipeline](./INTELLIGENT_PIPELINE.md) - AI orchestration & story arcs
+- 🎬 [Overlays & Effects](./OVERLAYS_EFFECTS.md) - Captions, spotlights, callouts
+- 📤 [Export Formats](./EXPORT_FORMATS.md) - GIF, thumbnails, platform presets
+
+## Quick Feature Reference
+
+### Export as GIF
+```bash
+look gif video.mp4 --width 480 --fps 12 -o demo.gif
+```
+
+### Generate Thumbnail
+```bash
+look thumbnail video.mp4 --auto --preset youtube -o thumb.png
+```
+
+### Add Captions
+```bash
+look captions video.mp4 --style karaoke --apply output.mp4
+```
+
+### Apply Overlays
+```bash
+look overlay video.mp4 --lower-third "John:Designer" -o output.mp4
+```
+
+### Intelligent Demo
+```bash
+look demo https://your-app.com --intelligent --story-arc problem-solution
+```
 
 ---
 
