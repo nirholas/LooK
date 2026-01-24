@@ -127,7 +127,10 @@ export class LiveRecorder extends EventEmitter {
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--single-process',
         '--window-size=' + this.options.width + ',' + this.options.height
       ]
     });

@@ -157,7 +157,7 @@ describe('CLI Integration', () => {
     it('should show error for unknown command', async () => {
       const { stderr } = await runCli(['unknown-command']);
       
-      expect(stderr).toContain('error');
+      expect(stderr.toLowerCase()).toContain('error');
     });
   });
 

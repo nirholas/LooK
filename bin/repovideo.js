@@ -114,6 +114,39 @@ program
     }
   });
 
+  // Batch processing command
+  program
+    .command('batch <config>')
+    .description('Process multiple demos from a configuration file')
+    .option('-c, --concurrency <n>', 'Number of parallel jobs', '2')
+    .option('-o, --output-dir <path>', 'Output directory', './batch-output')
+    .option('--resume', 'Resume from last failed job')
+    .option('--dry-run', 'Show what would be processed')
+    .option('--report <path>', 'Generate report file')
+    .action(async (configPath, options) => {
+      console.log(chalk.magenta(banner));
+      console.log(chalk.cyan('📦 Batch Processing Mode\n'));
+    
+      try {
+        const { BatchProcessor } = await import('../src/v2/batch.js');
+        const processor = new BatchProcessor({
+          concurrency: parseInt(options.concurrency),
+          outputDir: options.outputDir,
+          resume: options.resume,
+          dryRun: options.dryRun,
+          reportPath: options.report
+        });
+      
+        await processor.loadConfig(configPath);
+        await processor.run();
+      
+      } catch (e) {
+        console.error(chalk.red('\n❌ Batch processing failed:'), e.message);
+        if (process.env.DEBUG) console.error(e.stack);
+        process.exit(1);
+      }
+    });
+
 // Live: Real-time recording with preview and control
 program
   .command('live <url>')

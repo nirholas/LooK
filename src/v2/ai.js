@@ -6,6 +6,28 @@ import { tmpdir } from 'os';
 import sharp from 'sharp';
 
 /**
+ * Retry wrapper with exponential backoff for transient AI service errors.
+ * @param {Function} fn - Async function to execute
+ * @param {number} maxRetries - Number of attempts (default 3)
+ * @param {number} baseDelay - Base delay in ms for backoff (default 1000)
+ */
+export async function withRetry(fn, maxRetries = 3, baseDelay = 1000) {
+  let lastError;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * @typedef {import('../types/ai.js').AIProviders} AIProviders
  * @typedef {import('../types/ai.js').WebsiteAnalysis} WebsiteAnalysis
  * @typedef {import('../types/ai.js').WebsiteMetadata} WebsiteMetadata
@@ -143,7 +165,7 @@ export async function analyzeWebsite(screenshotBase64, metadata = {}) {
   // Compress image to avoid 500 errors from oversized requests
   const { base64, mimeType } = await compressForVision(screenshotBase64);
   
-  const response = await getOpenAI().chat.completions.create({
+  const response = await withRetry(() => getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     response_format: { type: 'json_object' },
     messages: [
@@ -198,7 +220,7 @@ Focus on identifying:
       }
     ],
     max_tokens: 1000
-  });
+  }));
 
   const content = response.choices[0].message.content;
   
@@ -277,7 +299,7 @@ export async function deepAnalyzeContent(screenshot, options = {}) {
   // Compress image for API
   const { base64, mimeType } = await compressForVision(screenshot);
   
-  const response = await getOpenAI().chat.completions.create({
+  const response = await withRetry(() => getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     response_format: { type: 'json_object' },
     messages: [
@@ -344,7 +366,7 @@ Guidelines:
       }
     ],
     max_tokens: 2000
-  });
+  }));
 
   const content = response.choices[0].message.content;
   
@@ -438,12 +460,12 @@ Just the script, nothing else.`
   
   if (groqClient && forceProvider !== 'openai') {
     try {
-      const response = await groqClient.chat.completions.create({
+      const response = await withRetry(() => groqClient.chat.completions.create({
         model: 'llama-3.3-70b-versatile', // Fast and capable
         messages,
         temperature: 0.7,
         max_tokens: 500
-      });
+      }));
       console.log('  [Using Groq - free tier]');
       return response.choices[0].message.content.trim();
     } catch (error) {
@@ -457,12 +479,12 @@ Just the script, nothing else.`
     throw new Error('Groq requested but GROQ_API_KEY not set or Groq failed');
   }
 
-  const response = await getOpenAI().chat.completions.create({
+  const response = await withRetry(() => getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages,
     temperature: 0.7,
     max_tokens: 500
-  });
+  }));
 
   return response.choices[0].message.content.trim();
 }
@@ -500,13 +522,13 @@ export async function generateVoiceover(script, options = {}) {
   
   const output = outputPath || join(tempDir, 'voiceover.mp3');
 
-  const response = await getOpenAI().audio.speech.create({
+  const response = await withRetry(() => getOpenAI().audio.speech.create({
     model: 'tts-1-hd', // Higher quality
     voice,
     input: script,
     speed,
     response_format: 'mp3'
-  });
+  }));
 
   const buffer = Buffer.from(await response.arrayBuffer());
   const writeStream = createWriteStream(output);

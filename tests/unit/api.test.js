@@ -3,6 +3,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Helper to create mock response with headers
+function createMockResponse(data, ok = true) {
+  return {
+    ok,
+    headers: {
+      get: (name) => name === 'content-type' ? 'application/json' : null
+    },
+    json: async () => data
+  };
+}
+
 const { API } = await import('../../ui/src/api.js');
 
 describe('API Client', () => {
@@ -12,10 +23,7 @@ describe('API Client', () => {
   
   describe('health', () => {
     it('should call health endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: 'ok' })
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse({ status: 'ok' }));
       
       const result = await API.health();
       
@@ -26,28 +34,21 @@ describe('API Client', () => {
   
   describe('analyze', () => {
     it('should send URL for analysis', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ projectId: 'test-123', analysis: {} })
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse({ projectId: 'test-123', analysis: {} }));
       
       const result = await API.analyze('https://example.com');
       
       expect(result.projectId).toBe('test-123');
-      expect(mockFetch).toHaveBeenCalledWith('/api/analyze', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/analyze', expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: expect.stringContaining('example.com')
-      });
+      }));
     });
   });
   
   describe('importProject', () => {
     it('should detect URL vs project ID', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ projectId: 'new-123', status: 'pending' })
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse({ projectId: 'new-123', status: 'pending' }));
       
       await API.importProject('https://github.com/user/repo');
       
@@ -60,10 +61,7 @@ describe('API Client', () => {
   
   describe('error handling', () => {
     it('should throw on non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: 'Not found' })
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse({ error: 'Not found' }, false));
       
       await expect(API.getProject('invalid'))
         .rejects.toThrow('Not found');

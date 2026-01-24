@@ -22,6 +22,12 @@ export class Project {
     this.createdAt = new Date().toISOString();
     this.updatedAt = new Date().toISOString();
     
+    // Import tracking
+    this.importType = null;      // 'website' | 'git'
+    this.importStatus = null;    // 'pending' | 'processing' | 'complete' | 'error'
+    this.importProgress = 0;     // 0-100
+    this.importError = null;     // Error message if failed
+    
     this.settings = {
       duration: 25,
       voice: 'nova',
@@ -94,6 +100,11 @@ export class Project {
       timeline: this.timeline,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      // Import tracking
+      importType: this.importType,
+      importStatus: this.importStatus,
+      importProgress: this.importProgress,
+      importError: this.importError,
       // Store relative paths for portability
       rawVideo: this.rawVideo ? basename(this.rawVideo) : null,
       voiceover: this.voiceover ? basename(this.voiceover) : null,
@@ -151,6 +162,12 @@ export class Project {
     project.timeline = { ...project.timeline, ...metadata.timeline };
     project.createdAt = metadata.createdAt;
     project.updatedAt = metadata.updatedAt;
+    
+    // Import tracking
+    project.importType = metadata.importType || null;
+    project.importStatus = metadata.importStatus || null;
+    project.importProgress = metadata.importProgress || 0;
+    project.importError = metadata.importError || null;
     
     // Resolve paths
     if (metadata.rawVideo) {
@@ -353,7 +370,11 @@ export class Project {
       updatedAt: this.updatedAt,
       hasRawVideo: !!this.rawVideo,
       hasVoiceover: !!this.voiceover,
-      hasCursorData: !!this.cursorData
+      hasCursorData: !!this.cursorData,
+      importType: this.importType,
+      importStatus: this.importStatus,
+      importProgress: this.importProgress,
+      importError: this.importError
     };
   }
 }
