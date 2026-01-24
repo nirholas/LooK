@@ -312,10 +312,64 @@ orchestrator.on('error', async (error, context) => {
 | Component | File |
 |-----------|------|
 | Orchestrator | `src/v2/demo-orchestrator.js` |
+| Intelligent Orchestrator | `src/v2/intelligent-orchestrator.js` |
 | State Detection | `src/v2/state-detector.js` |
 | Element Discovery | `src/v2/element-discovery.js` |
 | Navigation Graph | `src/v2/navigation-graph.js` |
 | Content Analyzer | `src/v2/content-analyzer.js` |
 | Demo Engine | `src/v2/demo-engine.js` |
+| Product Intelligence | `src/v2/product-intelligence.js` |
+| Workflow Detector | `src/v2/workflow-detector.js` |
+| Visual Moments | `src/v2/visual-moments.js` |
+| Smart Composer | `src/v2/smart-composer.js` |
+| Quality Scorer | `src/v2/quality-scorer.js` |
+| Voice Enhancer | `src/v2/voice-enhancer.js` |
+| Smart Pacing | `src/v2/smart-pacing.js` |
 | AI Integration | `src/v2/ai.js` |
 | Interactions | `src/v2/interactions.js` |
+
+## Enterprise Modules
+
+| Module | File | Description |
+|--------|------|-------------|
+| GIF Export | `src/v2/gif-export.js` | Video to GIF conversion |
+| Auto Thumbnail | `src/v2/auto-thumbnail.js` | AI frame selection |
+| Animated Captions | `src/v2/animated-captions.js` | Karaoke/pop subtitles |
+| Lower Thirds | `src/v2/lower-thirds.js` | Name/title overlays |
+| Keyboard Visualizer | `src/v2/keyboard-visualizer.js` | Shortcut display |
+| Callout Annotations | `src/v2/callout-annotations.js` | Arrows, badges, boxes |
+| Spotlight | `src/v2/spotlight.js` | Focus effects |
+| Scene Transitions | `src/v2/scene-transitions.js` | Fade, blur, slide |
+| Watermark | `src/v2/watermark.js` | Text/logo overlays |
+| Progress Bar | `src/v2/progress-bar.js` | Timeline indicator |
+| Intro/Outro | `src/v2/intro-outro.js` | Branded cards |
+| Focus Effects | `src/v2/focus-effects.js` | Glow, arrows |
+
+## CLI Commands Quick Reference
+
+```bash
+# Core Commands
+look demo <url>          # Full AI demo
+look quick <url>         # Smart defaults
+look mobile <app>        # Mobile app demo
+look repo <url>          # Terminal demo
+look serve               # Web editor
+look walkthrough <url>   # Multi-page exploration
+
+# Post-Production
+look gif <video>         # Export as GIF
+look thumbnail <video>   # Generate thumbnail
+look overlay <video>     # Add overlays
+look captions <video>    # Add captions
+
+# Management
+look projects            # List projects
+look edit [id]           # Open in editor
+look batch --config      # Batch process
+
+# Testing
+look test                # Verify setup
+look test --full         # Full pipeline test
+look mobile-test         # Mobile prerequisites
+look devices             # List device frames
+```

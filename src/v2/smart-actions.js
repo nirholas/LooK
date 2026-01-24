@@ -9,6 +9,9 @@
  */
 
 import { extractPageElements } from './ai-enhanced.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('smart-actions');
 
 /**
  * @typedef {Object} SmartAction
@@ -483,7 +486,7 @@ export class SmartActionExecutor {
 
   log(msg) {
     if (this.verbose) {
-      console.log(`[SmartAction] ${msg}`);
+      log.debug(msg);
     }
   }
 

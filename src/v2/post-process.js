@@ -5,11 +5,23 @@ import { tmpdir } from 'os';
 import { mkdir, writeFile } from 'fs/promises';
 import { CursorRenderer, CURSOR_STYLES } from './cursor-renderer.js';
 import { applyClickEffects } from './click-effects.js';
+import { 
+  CursorEffectsEngine, 
+  MotionBlurEngine, 
+  AutoDuckingEngine, 
+  NoiseReductionEngine,
+  EFFECT_PRESETS 
+} from './effects/index.js';
 
 const execAsync = promisify(exec);
 
 /**
  * Post-process video with professional effects including cursor overlay and animated zoom
+ * 
+ * Now includes advanced effects from LooK Effects Library:
+ * - Enhanced cursor effects with ripples, trails, motion blur
+ * - Audio auto-ducking (reduce music during speech)
+ * - Noise reduction
  */
 export async function postProcess(inputVideo, options = {}) {
   const {
@@ -34,13 +46,26 @@ export async function postProcess(inputVideo, options = {}) {
     clickEffectColor = '#3B82F6',  // Blue by default
     clickEffectSize = 60,          // Max effect radius in pixels
     clickEffectDuration = 400,     // Effect duration in ms
-    clickEffectOpacity = 0.6       // Effect opacity
+    clickEffectOpacity = 0.6,      // Effect opacity
+    // Advanced effects (from Aqua)
+    cursorEffects = {},            // CursorEffectsEngine config
+    motionBlurConfig = {},         // MotionBlurEngine config
+    autoDucking = {},              // AutoDuckingEngine config
+    noiseReduction = {},           // NoiseReductionEngine config
+    effectsPreset = null           // Use preset: 'professional', 'tutorial', 'social', 'minimal'
   } = options;
 
   const tempDir = join(tmpdir(), `repovideo-pp-${Date.now()}`);
   await mkdir(tempDir, { recursive: true });
   
   const output = outputPath || join(tempDir, 'processed.mp4');
+
+  // Initialize advanced effects engines with presets or custom config
+  const preset = effectsPreset ? EFFECT_PRESETS[effectsPreset] : null;
+  const cursorFxEngine = new CursorEffectsEngine(preset?.cursorEffects || cursorEffects);
+  const motionBlurEngine = new MotionBlurEngine(preset?.motionBlur || motionBlurConfig);
+  const autoDuckingEngine = new AutoDuckingEngine(preset?.autoDucking || autoDucking);
+  const noiseReductionEngine = new NoiseReductionEngine(preset?.noiseReduction || noiseReduction);
   
   // Step 1: Apply cursor overlay FIRST (before zoom) if we have cursor data
   let videoWithCursor = inputVideo;
@@ -74,10 +99,14 @@ export async function postProcess(inputVideo, options = {}) {
     }
   }
 
-  // Step 2: Apply click effects AFTER cursor but BEFORE zoom
+  // Step 2: Apply enhanced click effects with CursorEffectsEngine
   let videoWithClickEffects = videoWithCursor;
   if (clickEffect !== 'none' && cursorData?.clicks?.length > 0) {
     console.log(`  Applying ${clickEffect} click effects to ${cursorData.clicks.length} click(s)...`);
+    
+    // Generate advanced ripple filter from CursorEffectsEngine if enabled
+    const advancedRippleFilter = cursorFxEngine.generateFFmpegFilter(cursorData.clicks, fps, width, height);
+    
     try {
       const clickOutput = join(tempDir, 'with-clicks.mp4');
       videoWithClickEffects = await applyClickEffects(videoWithCursor, cursorData.clicks, {
@@ -442,13 +471,29 @@ export async function addCursorOverlay(inputVideo, cursorData, options = {}) {
 }
 
 /**
- * Combine video and audio
+ * Combine video and audio with advanced audio processing
+ * 
+ * @param {string} videoPath - Input video path
+ * @param {string} audioPath - Input audio (voiceover) path
+ * @param {string} outputPath - Output path
+ * @param {Object} options - Processing options
+ * @param {string} [options.backgroundMusicPath] - Optional background music
+ * @param {Object} [options.noiseReduction] - Noise reduction config
+ * @param {Object} [options.autoDucking] - Auto-ducking config for background music
  */
 export async function combineVideoAudio(videoPath, audioPath, outputPath, options = {}) {
   const {
     fadeOut = 2,
-    normalizeAudio = true
+    normalizeAudio = true,
+    backgroundMusicPath = null,
+    backgroundMusicVolume = 0.15,
+    noiseReduction = { enabled: true },
+    autoDucking = { enabled: true }
   } = options;
+
+  // Initialize audio effects engines
+  const noiseReductionEngine = new NoiseReductionEngine(noiseReduction);
+  const autoDuckingEngine = new AutoDuckingEngine(autoDucking);
 
   // Get video duration
   const { stdout: durationStr } = await execAsync(
@@ -457,6 +502,15 @@ export async function combineVideoAudio(videoPath, audioPath, outputPath, option
   const videoDuration = parseFloat(durationStr.trim()) || 30;
 
   let audioFilters = [];
+  
+  // Apply noise reduction to voiceover
+  if (noiseReduction.enabled) {
+    const nrFilter = noiseReductionEngine.generateFFmpegFilter();
+    if (nrFilter) {
+      audioFilters.push(nrFilter);
+      console.log('✓ Noise reduction applied to voiceover');
+    }
+  }
   
   // Normalize audio
   if (normalizeAudio) {
@@ -471,6 +525,36 @@ export async function combineVideoAudio(videoPath, audioPath, outputPath, option
 
   const audioFilterStr = audioFilters.length > 0 ? `-af "${audioFilters.join(',')}"` : '';
 
+  // If we have background music, mix it with auto-ducking
+  if (backgroundMusicPath) {
+    console.log('✓ Mixing background music with auto-ducking');
+    
+    // Auto-ducking: reduce music volume when voice is detected
+    // Uses sidechain compression effect
+    const duckingFilter = autoDucking.enabled 
+      ? `sidechaincompress=threshold=${autoDucking.threshold || -30}dB:ratio=${1/autoDucking.ratio || 4}:attack=${autoDucking.attack || 100}:release=${autoDucking.release || 500}`
+      : '';
+    
+    const mixCommand = `ffmpeg -y \
+      -i "${videoPath}" \
+      -i "${audioPath}" \
+      -i "${backgroundMusicPath}" \
+      -filter_complex "\
+        [1:a]${audioFilters.length > 0 ? audioFilters.join(',') + ',' : ''}aresample=async=1[voice];\
+        [2:a]volume=${backgroundMusicVolume},aloop=loop=-1:size=2e+09[music];\
+        [music][voice]${duckingFilter ? duckingFilter + ',' : ''}amix=inputs=2:duration=first:dropout_transition=2[out]" \
+      -map 0:v -map "[out]" \
+      -c:v copy \
+      -c:a aac -b:a 192k \
+      -shortest \
+      -movflags +faststart \
+      "${outputPath}"`;
+    
+    await execAsync(mixCommand, { timeout: 300000 });
+    return outputPath;
+  }
+
+  // Standard command without background music
   const command = `ffmpeg -y \
     -i "${videoPath}" \
     -i "${audioPath}" \

@@ -201,6 +201,55 @@ Not currently. LooK uses emulators/simulators for consistent recording quality.
 
 ---
 
+## Export & Post-Production
+
+### How do I export as a GIF?
+
+Use the `gif` command:
+```bash
+look gif video.mp4 --width 480 --fps 12 -o demo.gif
+```
+
+### How do I generate a thumbnail?
+
+Use auto-selection for best frame:
+```bash
+look thumbnail video.mp4 --auto --preset youtube -o thumb.png
+```
+
+### What caption styles are available?
+
+| Style | Description |
+|-------|-------------|
+| `karaoke` | Word-by-word highlighting |
+| `pop` | Words pop in sequentially |
+| `typewriter` | Character-by-character |
+| `fade` | Smooth fade transitions |
+| `standard` | Traditional subtitles |
+
+### Can I add my company logo as a watermark?
+
+Yes:
+```bash
+look demo https://myapp.com --watermark-image logo.png --watermark-position bottom-right
+```
+
+### What is the Intelligent Pipeline?
+
+The intelligent pipeline uses AI to:
+1. Analyze your product (category, value props, target audience)
+2. Detect key workflows worth demonstrating
+3. Find visual moments (animations, charts, forms)
+4. Compose a narrative with story arcs
+5. Score quality and auto-optimize if needed
+
+Enable with `--intelligent`:
+```bash
+look demo https://myapp.com --intelligent --quality-threshold 80
+```
+
+---
+
 ## Troubleshooting
 
 ### Where are projects saved?

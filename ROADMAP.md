@@ -99,12 +99,24 @@ Released with:
 - [ ] Webhook notifications on completion
 - [ ] S3/GCS output destinations
 
-### Additional Features
-- [ ] Custom intro/outro clips
+### Additional Features (✅ Implemented!)
+- [x] Animated intro/outro clips
 - [ ] Background music library
 - [ ] Audio ducking during voiceover
-- [ ] Animated text overlays
-- [ ] Brand kit integration (logos, colors)
+- [x] Animated text overlays
+- [x] Brand kit integration (watermarks, colors)
+
+### Enterprise Overlays (✅ Implemented!)
+- [x] **Animated Captions** - Karaoke, pop, typewriter, fade styles
+- [x] **Lower Thirds** - Professional name/title overlays
+- [x] **Keyboard Visualizer** - Display shortcuts (Mac/Windows)
+- [x] **Callout Annotations** - Arrows, badges, boxes, blur
+- [x] **Spotlight Effects** - Focus attention with dimming
+- [x] **Scene Transitions** - Fade, blur, slide, zoom
+- [x] **Progress Bars** - Timeline indicators
+- [x] **Watermarks** - Text and logo overlays
+- [x] **GIF Export** - High-quality palette-optimized GIFs
+- [x] **Auto Thumbnails** - AI-powered frame selection
 
 ---
 
@@ -125,7 +137,7 @@ Released with:
 - [x] Improved script generation with context (via Smart Composer)
 - [ ] Multi-language voiceover support
 - [ ] Voice cloning (with consent)
-- [ ] AI-powered thumbnail generation
+- [x] AI-powered thumbnail generation (via Auto Thumbnail)
 
 ### Advanced Features
 - [ ] Interactive demo embedding (HTML5 player)
@@ -151,10 +163,10 @@ Released with:
 - GitHub Actions for automated demos on PR
 
 ### Accessibility
-- Auto-generated captions
-- Screen reader compatible player
-- High contrast cursor modes
-- Keyboard-only demo creation
+- [x] Auto-generated captions (via Animated Captions)
+- [ ] Screen reader compatible player
+- [ ] High contrast cursor modes
+- [ ] Keyboard-only demo creation
 
 ---
 

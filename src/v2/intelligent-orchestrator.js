@@ -25,6 +25,9 @@ import { CursorTracker } from './cursor-tracker.js';
 import { recordBrowser } from './recorder.js';
 import { postProcess, combineVideoAudio, exportWithPreset } from './post-process.js';
 import { generateScript, generateVoiceover } from './ai.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('intelligent-orchestrator');
 
 /**
  * @typedef {Object} IntelligentDemoOptions

@@ -140,7 +140,7 @@ export class MobileRecorder {
    */
   async stopRecording(outputPath) {
     if (!this.isRecording) {
-      console.warn('No recording in progress');
+      log.warn('No recording in progress');
       return null;
     }
 
