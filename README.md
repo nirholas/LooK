@@ -8,7 +8,7 @@
 
 Turn any website into a polished demo video with AI-generated voiceover. No editing required.
 
-<p align="center">
+<p align="center"> 
   <img src="https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Demo+Video+Coming+Soon" alt="LooK Demo" width="600">
   <br>
   <em>Generate beautiful product demos automatically</em>
