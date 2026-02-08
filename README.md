@@ -1,6 +1,6 @@
 # L👀K
 
-[![npm version](https://img.shields.io/npm/v/look-demo.svg)](https://www.npmjs.com/package/look-demo)
+[![npm version](https://img.shields.io/npm/v/look-demo.svg)](https://www.npmjs.com/package/look-demo) 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
