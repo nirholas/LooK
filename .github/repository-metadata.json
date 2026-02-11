@@ -1,0 +1,13 @@
+{
+    "name": "LooK",
+    "description": "LooK",
+    "version": "1.0.0",
+    "publisher": "nirholas",
+    "repository": "https://github.com/nirholas/LooK",
+    "language": "JavaScript",
+    "topics": [
+        "nirholas",
+        "open-source",
+        "look"
+    ]
+}

@@ -638,3 +638,7 @@ Contributors are recognized in:
 - README acknowledgments
 
 Thank you for contributing! 🎬
+
+## Code of Conduct
+
+Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).

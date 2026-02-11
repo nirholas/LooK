@@ -1,0 +1,9 @@
+# LooK
+
+> LooK
+
+## Links
+
+- Repository: https://github.com/nirholas/LooK
+- Author: https://github.com/nirholas
+- Full documentation: https://raw.githubusercontent.com/nirholas/LooK/main/llms-full.txt
