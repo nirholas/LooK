@@ -42,7 +42,7 @@
     "saas"
   ],
   "author": "nichbot",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "bcryptjs": "^2.4.3",
