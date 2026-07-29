@@ -53,3 +53,8 @@ docker/*.apk
 # Mobile recording temp
 *.app
 *.ipa
+
+# Local SQLite database (created automatically from src/db/schema.sql)
+data/*.db
+data/*.db-shm
+data/*.db-wal
