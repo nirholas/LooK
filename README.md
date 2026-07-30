@@ -378,3 +378,10 @@ See [ROADMAP.md](./ROADMAP.md) for planned features.
 ---
 
 Built with ❤️ by [nichbot](https://github.com/nichbot)
+
+## Documentation
+
+Full documentation site: **https://nirholas.github.io/LooK/**
+
+- [Getting started](docs/getting-started.md) covers install and first run.
+- [Examples](docs/examples.md) has copy-paste snippets.
