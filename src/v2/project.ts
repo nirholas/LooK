@@ -435,15 +435,13 @@ export class Project {
     // Combine with voiceover if available
     let finalPath = processedPath;
     if (this.voiceover) {
-      finalPath = await combineVideoAudio(processedPath, this.voiceover, {
-        outputPath: join(tempDir, 'with-audio.mp4')
-      });
+      finalPath = await combineVideoAudio(processedPath, this.voiceover, join(tempDir, 'with-audio.mp4'));
     }
 
     if (onProgress) onProgress({ stage: 'exporting', progress: 75 });
 
     // Export with preset
-    await exportWithPreset(finalPath, outputPath, this.settings.preset);
+    await exportWithPreset(finalPath, this.settings.preset, outputPath);
 
     if (onProgress) onProgress({ stage: 'complete', progress: 100 });
 

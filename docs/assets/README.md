@@ -2,20 +2,18 @@
 
 This folder contains static assets for the MkDocs documentation site:
 
-- `favicon.png` - Site favicon (add your own 32x32 or 64x64 PNG)
-- `logo.png` - Site logo (optional)
+- `favicon.svg` - Site favicon, wired up in `mkdocs.yml`
+- `logo.svg` - Site logo, wired up in `mkdocs.yml`
 - Additional images and media files
 
-## Adding a Favicon
+## Replacing the Favicon or Logo
 
-Create a PNG image (recommended 32x32 or 64x64 pixels) and save it as `favicon.png` in this folder.
-
-## Adding a Logo
-
-For a custom logo in the header, create `logo.png` and update `mkdocs.yml`:
+Overwrite `favicon.svg` or `logo.svg` in this folder. `mkdocs.yml` already points at both:
 
 ```yaml
 theme:
-  icon:
-    logo: assets/logo.png
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
 ```
+
+To use a different filename or format, update those two lines to match.
