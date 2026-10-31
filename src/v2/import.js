@@ -4,7 +4,7 @@
  * Handles importing projects from URLs (websites) and Git repositories.
  */
 
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import { mkdir, readFile, rm, readdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';

@@ -1,4 +1,4 @@
-import simpleGit from 'simple-git';
+import { simpleGit } from 'simple-git';
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
