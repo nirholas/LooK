@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L👀K — AI-Powered Demo Videos</title>
+  <meta name="description" content="Create stunning product demos in seconds with AI. Professional videos, zero effort.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👀</text></svg>">
+  <script type="module" crossorigin src="/assets/main-DlssHbHD.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BLDSH60g.css">
+</head>
+<body>
+  <!-- Global Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p id="loading-message" class="loading-text">Loading...</p>
+  </div>
+
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">L<span class="eyes">👀</span>K</h1>
+        <span class="tagline">Studio</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#editor" class="nav-link active">Editor</a>
+        <a href="#templates" class="nav-link">Templates</a>
+        <a href="#docs" class="nav-link">Docs</a>
+      </nav>
+      <div class="header-right">
+        <div class="api-status" id="api-status" title="API Configuration" role="button" tabindex="0">
+          <span class="api-indicator" id="api-indicator"></span>
+          <span class="api-label">API</span>
+        </div>
+        <button id="settings-btn" class="btn btn-icon" title="Settings" aria-label="Settings">
+          ⚙️
+        </button>
+        <button id="export-btn" class="btn btn-primary" disabled>
+          <span class="icon">✨</span> Export
+        </button>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main">
+      <!-- Start screen -->
+      <section id="start-screen" class="start-screen">
+        <div class="start-content">
+          <h2>Create stunning demos in seconds</h2>
+          <p>Transform any website into a professional product video with AI-powered recording, smart zoom, and auto-narration.</p>
+          
+          <form id="analyze-form" class="analyze-form">
+            <input 
+              type="url" 
+              id="url-input" 
+              placeholder="Paste your website URL..." 
+              required
+              class="url-input"
+            >
+            <div class="form-buttons">
+              <button type="submit" class="btn btn-primary btn-large">
+                <span class="icon">✨</span> Generate Demo
+              </button>
+              <button type="button" id="live-record-btn" class="btn btn-secondary btn-large">
+                <span class="icon">🎬</span> Live Record
+              </button>
+              <button type="button" id="import-btn" class="btn btn-secondary btn-large">
+                <span class="icon">📥</span> Import
+              </button>
+            </div>
+          </form>
+          <p class="form-hint"><strong>Generate Demo</strong> uses AI to automatically create your video. <strong>Live Record</strong> gives you real-time control.</p>
+
+          <div id="recent-projects" class="recent-projects">
+            <h3>Recent Projects</h3>
+            <ul id="projects-list" class="projects-list"></ul>
+          </div>
+
+          <!-- Dashboard Stats -->
+          <div id="dashboard-stats" class="dashboard-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="stat-projects">-</span>
+              <span class="stat-label">Projects</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-recordings">-</span>
+              <span class="stat-label">Recordings</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-exports">-</span>
+              <span class="stat-label">Exports</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-uptime">-</span>
+              <span class="stat-label">Server Uptime</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Editor screen (hidden initially) -->
+      <section id="editor-screen" class="editor-screen hidden">
+        <div class="editor-toolbar">
+          <button id="back-btn" class="btn btn-secondary btn-icon" title="Back to start">
+            <span class="icon">←</span> Back
+          </button>
+          <div class="toolbar-center">
+            <span id="autosave-indicator" class="autosave-indicator hidden">💾 Saving...</span>
+          </div>
+        </div>
+        <div class="editor-layout">
+          <!-- Live preview panel (shown during live recording) -->
+          <div id="live-preview-panel" class="live-preview-panel hidden">
+            <div id="live-preview-container" class="live-preview-container"></div>
+          </div>
+          
+          <!-- Preview area -->
+          <div class="preview-area">
+            <div class="video-container">
+              <video id="preview-video" class="preview-video"></video>
+              <canvas id="cursor-overlay" class="cursor-overlay"></canvas>
+              <div id="video-controls" class="video-controls">
+                <button id="play-btn" class="control-btn" title="Play/Pause">▶️</button>
+                <span id="time-display" class="time-display">0:00 / 0:00</span>
+                <input type="range" id="seek-bar" class="seek-bar" min="0" max="100" value="0">
+                <select id="playback-speed" class="playback-speed" title="Playback Speed">
+                  <option value="0.5">0.5x</option>
+                  <option value="1" selected>1x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+                <button id="volume-btn" class="control-btn" title="Toggle Mute">🔊</button>
+                <button id="fullscreen-btn" class="control-btn" title="Fullscreen">⛶</button>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline-container">
+              <div id="timeline" class="timeline">
+                <div id="timeline-track" class="timeline-track">
+                  <div id="timeline-progress" class="timeline-progress"></div>
+                  <div id="trim-start" class="trim-handle trim-start"></div>
+                  <div id="trim-end" class="trim-handle trim-end"></div>
+                  <div id="playhead" class="playhead"></div>
+                </div>
+              </div>
+              <div id="timeline-markers" class="timeline-markers">
+                <span class="time-marker">0:00</span>
+                <span class="time-marker"></span>
+                <span class="time-marker"></span>
+                <span class="time-marker"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="sidebar">
+            <!-- Tabs -->
+            <div class="sidebar-tabs">
+              <button class="tab-btn active" data-tab="script">Script</button>
+              <button class="tab-btn" data-tab="markers">Markers</button>
+              <button class="tab-btn" data-tab="settings">Settings</button>
+            </div>
+
+            <!-- Script tab -->
+            <div id="script-tab" class="tab-content active">
+              <div class="script-section">
+                <label for="script-editor">Voiceover Script</label>
+                <textarea 
+                  id="script-editor" 
+                  class="script-editor" 
+                  placeholder="AI-generated script will appear here..."
+                ></textarea>
+                <div class="script-meta">
+                  <span id="script-word-count" class="word-count">0 words</span>
+                </div>
+                <div class="script-actions">
+                  <select id="voice-select" class="voice-select">
+                    <option value="nova">Nova (warm)</option>
+                    <option value="alloy">Alloy (neutral)</option>
+                    <option value="echo">Echo (male)</option>
+                    <option value="fable">Fable (expressive)</option>
+                    <option value="onyx">Onyx (deep)</option>
+                    <option value="shimmer">Shimmer (bright)</option>
+                  </select>
+                  <button id="regenerate-voice-btn" class="btn btn-secondary">
+                    🔄 Regenerate Voice
+                  </button>
+                </div>
+              </div>
+
+              <div class="analysis-section">
+                <h4>AI Analysis</h4>
+                <div id="analysis-display" class="analysis-display"></div>
+              </div>
+            </div>
+
+            <!-- Markers tab -->
+            <div id="markers-tab" class="tab-content hidden">
+              <div class="markers-panel">
+                <div class="markers-header">
+                  <h4>Section Markers</h4>
+                  <button id="add-marker-btn" class="btn btn-secondary btn-small">
+                    ➕ Add Marker
+                  </button>
+                </div>
+                <div class="markers-help">
+                  <p>Double-click on the timeline or press <kbd>M</kbd> to add a marker at the current time.</p>
+                </div>
+                <div class="markers-actions">
+                  <button id="generate-markers-btn" class="btn btn-secondary btn-small" title="Create markers from recorded clicks">
+                    ✨ Generate from Clicks
+                  </button>
+                  <button id="copy-chapters-btn" class="btn btn-secondary btn-small" title="Copy YouTube chapters to clipboard">
+                    📋 Copy YouTube Chapters
+                  </button>
+                  <button id="clear-markers-btn" class="btn btn-secondary btn-small btn-danger" title="Remove all markers">
+                    🗑️ Clear All
+                  </button>
+                </div>
+                <div id="markers-list" class="markers-list"></div>
+              </div>
+            </div>
+
+            <!-- Settings tab -->
+            <div id="settings-tab" class="tab-content hidden">
+              <div class="settings-group">
+                <h4>Zoom</h4>
+                <div class="setting-row">
+                  <label for="zoom-mode">Mode</label>
+                  <select id="zoom-mode">
+                    <option value="smart">Smart (click-based)</option>
+                    <option value="follow">Follow cursor</option>
+                    <option value="basic">Basic (focus points)</option>
+                    <option value="none">No zoom</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="zoom-intensity">Intensity</label>
+                  <input type="range" id="zoom-intensity" min="0" max="100" value="50">
+                </div>
+                <div class="setting-row">
+                  <label for="zoom-speed">Speed</label>
+                  <select id="zoom-speed">
+                    <option value="slow">Slow</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="fast">Fast</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Cursor</h4>
+                <div class="setting-row">
+                  <label for="cursor-style">Style</label>
+                  <select id="cursor-style">
+                    <option value="default">Default</option>
+                    <option value="pointer">Pointer</option>
+                    <option value="dot">Dot</option>
+                    <option value="circle">Circle</option>
+                    <option value="none">Hidden</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="cursor-size">Size</label>
+                  <input type="range" id="cursor-size" min="12" max="48" value="24">
+                </div>
+                <div class="setting-row">
+                  <label for="cursor-color">Color</label>
+                  <input type="color" id="cursor-color" value="#000000">
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Click Effects</h4>
+                <div class="setting-row">
+                  <label for="click-effect">Style</label>
+                  <select id="click-effect">
+                    <option value="ripple">Ripple</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="ring">Ring</option>
+                    <option value="spotlight">Spotlight</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <label for="click-color">Color</label>
+                  <input type="color" id="click-color" value="#3B82F6">
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <h4>Export</h4>
+                <div class="setting-row">
+                  <label for="export-preset">Preset</label>
+                  <select id="export-preset">
+                    <option value="youtube">YouTube (1080p)</option>
+                    <option value="twitter">Twitter (720p)</option>
+                    <option value="instagram">Instagram (1:1)</option>
+                    <option value="tiktok">TikTok (9:16)</option>
+                    <option value="gif">GIF</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Advanced Settings (collapsible) -->
+              <details class="settings-group settings-advanced">
+                <summary><h4>Advanced</h4></summary>
+                
+                <div class="setting-row">
+                  <label for="video-resolution">Resolution</label>
+                  <select id="video-resolution">
+                    <option value="1920x1080">1080p (1920×1080)</option>
+                    <option value="2560x1440">1440p (2560×1440)</option>
+                    <option value="3840x2160">4K (3840×2160)</option>
+                    <option value="1280x720">720p (1280×720)</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="frame-rate">Frame Rate</label>
+                  <select id="frame-rate">
+                    <option value="30">30 FPS</option>
+                    <option value="60" selected>60 FPS</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="demo-duration">Duration (seconds)</label>
+                  <input type="number" id="demo-duration" min="10" max="300" value="25" class="form-input form-input-sm">
+                </div>
+              </details>
+
+              <!-- Intro/Outro Settings -->
+              <details class="settings-group settings-intro-outro">
+                <summary><h4>Intro & Outro</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-intro">
+                    <span>Enable Intro</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="intro-options">
+                  <label for="intro-title">Title</label>
+                  <input type="text" id="intro-title" class="form-input" placeholder="Your Product Name">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="intro-theme">Theme</label>
+                  <select id="intro-theme">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="gradient">Gradient</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-outro">
+                    <span>Enable Outro CTA</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="outro-options">
+                  <label for="outro-cta">CTA Text</label>
+                  <input type="text" id="outro-cta" class="form-input" placeholder="Try it free today!">
+                </div>
+              </details>
+
+              <!-- Branding Settings -->
+              <details class="settings-group settings-branding">
+                <summary><h4>Branding</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-watermark">
+                    <span>Enable Watermark</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="watermark-options">
+                  <label for="watermark-text">Watermark Text</label>
+                  <input type="text" id="watermark-text" class="form-input" placeholder="yourcompany.com">
+                </div>
+                
+                <div class="setting-row">
+                  <label for="watermark-position">Position</label>
+                  <select id="watermark-position">
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="watermark-opacity">Opacity</label>
+                  <input type="range" id="watermark-opacity" min="10" max="100" value="50">
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-progress-bar">
+                    <span>Show Progress Bar</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="progress-bar-style">Progress Style</label>
+                  <select id="progress-bar-style">
+                    <option value="bar">Bar</option>
+                    <option value="line">Thin Line</option>
+                    <option value="dots">Dots</option>
+                    <option value="circular">Circular</option>
+                  </select>
+                </div>
+              </details>
+
+              <!-- Device Frame Settings -->
+              <details class="settings-group settings-device-frame">
+                <summary><h4>Device Frame</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-device-frame">
+                    <span>Enable Device Frame</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row" id="device-frame-options">
+                  <label for="device-type">Device</label>
+                  <select id="device-type">
+                    <option value="none">None</option>
+                    <option value="iphone-15-pro">iPhone 15 Pro</option>
+                    <option value="iphone-15">iPhone 15</option>
+                    <option value="iphone-14-pro">iPhone 14 Pro</option>
+                    <option value="pixel-8">Google Pixel 8</option>
+                    <option value="pixel-8-pro">Google Pixel 8 Pro</option>
+                    <option value="macbook-pro">MacBook Pro</option>
+                    <option value="ipad-pro">iPad Pro</option>
+                    <option value="browser">Browser Window</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="device-shadow" checked>
+                    <span>Show Shadow</span>
+                  </label>
+                </div>
+              </details>
+
+              <!-- Subtitles Settings -->
+              <details class="settings-group settings-subtitles">
+                <summary><h4>Subtitles</h4></summary>
+                
+                <div class="setting-row">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="enable-subtitles">
+                    <span>Burn-in Subtitles</span>
+                  </label>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="subtitle-style">Style</label>
+                  <select id="subtitle-style">
+                    <option value="standard">Standard</option>
+                    <option value="karaoke">Karaoke (animated)</option>
+                    <option value="pop">Pop (word by word)</option>
+                    <option value="typewriter">Typewriter</option>
+                  </select>
+                </div>
+                
+                <div class="setting-row">
+                  <label for="subtitle-position">Position</label>
+                  <select id="subtitle-position">
+                    <option value="bottom">Bottom</option>
+                    <option value="top">Top</option>
+                  </select>
+                </div>
+              </details>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <!-- Templates Page -->
+    <section id="templates-page" class="templates-page hidden">
+      <div class="templates-content">
+        <header class="templates-header">
+          <h2>Demo Templates</h2>
+          <p>Start with a pre-configured template for your use case. Enter your URL and we'll apply the optimal settings.</p>
+        </header>
+        
+        <div class="templates-grid">
+          <div class="template-card" data-template="saas-landing">
+            <div class="template-preview">
+              <span class="template-icon">🚀</span>
+            </div>
+            <div class="template-info">
+              <h3>SaaS Landing</h3>
+              <p>Perfect for product pages, feature tours, and conversion-focused demos.</p>
+              <div class="template-features">
+                <span class="feature-tag">Auto-scroll</span>
+                <span class="feature-tag">CTA Focus</span>
+                <span class="feature-tag">25-30s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="ecommerce">
+            <div class="template-preview">
+              <span class="template-icon">🛒</span>
+            </div>
+            <div class="template-info">
+              <h3>E-Commerce</h3>
+              <p>Showcase products, cart flows, and checkout experiences with engaging zoom.</p>
+              <div class="template-features">
+                <span class="feature-tag">Product Focus</span>
+                <span class="feature-tag">Cart Flow</span>
+                <span class="feature-tag">30-45s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="portfolio">
+            <div class="template-preview">
+              <span class="template-icon">🎨</span>
+            </div>
+            <div class="template-info">
+              <h3>Portfolio</h3>
+              <p>Elegant scrolling through creative work with artistic transitions.</p>
+              <div class="template-features">
+                <span class="feature-tag">Gallery Mode</span>
+                <span class="feature-tag">Smooth Scroll</span>
+                <span class="feature-tag">40-60s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="documentation">
+            <div class="template-preview">
+              <span class="template-icon">📚</span>
+            </div>
+            <div class="template-info">
+              <h3>Documentation</h3>
+              <p>Navigate code examples and API references with clear explanations.</p>
+              <div class="template-features">
+                <span class="feature-tag">Code Highlight</span>
+                <span class="feature-tag">Nav Focus</span>
+                <span class="feature-tag">60-90s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="mobile-app">
+            <div class="template-preview">
+              <span class="template-icon">📱</span>
+            </div>
+            <div class="template-info">
+              <h3>Mobile App</h3>
+              <p>Showcase mobile experiences with device frames and touch interactions.</p>
+              <div class="template-features">
+                <span class="feature-tag">Device Frame</span>
+                <span class="feature-tag">Touch Effects</span>
+                <span class="feature-tag">15-25s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="template-card" data-template="dashboard">
+            <div class="template-preview">
+              <span class="template-icon">📊</span>
+            </div>
+            <div class="template-info">
+              <h3>Dashboard</h3>
+              <p>Highlight analytics, charts, and data visualization features.</p>
+              <div class="template-features">
+                <span class="feature-tag">Data Focus</span>
+                <span class="feature-tag">Chart Zoom</span>
+                <span class="feature-tag">45-60s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="templates-cta">
+          <button class="btn btn-secondary" onclick="document.querySelector('.nav-link[href=\'#editor\']')?.click()">
+            ← Back to Editor
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Docs Page -->
+    <section id="docs-page" class="docs-page hidden">
+      <div class="docs-layout">
+        <nav class="docs-sidebar">
+          <div class="docs-nav">
+            <h4>Getting Started</h4>
+            <a href="#quick-start" class="docs-link active">Quick Start</a>
+            <a href="#installation" class="docs-link">Installation</a>
+            <a href="#first-demo" class="docs-link">Your First Demo</a>
+            
+            <h4>Features</h4>
+            <a href="#ai-analysis" class="docs-link">AI Analysis</a>
+            <a href="#live-recording" class="docs-link">Live Recording</a>
+            <a href="#auto-zoom" class="docs-link">Smart Zoom</a>
+            <a href="#voiceover" class="docs-link">AI Voiceover</a>
+            
+            <h4>Export & Share</h4>
+            <a href="#export-formats" class="docs-link">Export Formats</a>
+            <a href="#youtube-chapters" class="docs-link">YouTube Chapters</a>
+            
+            <h4>API Reference</h4>
+            <a href="#rest-api" class="docs-link">REST API</a>
+            <a href="#cli" class="docs-link">CLI Commands</a>
+          </div>
+        </nav>
+        
+        <main class="docs-content">
+          <article id="quick-start">
+            <h1>Quick Start</h1>
+            <p>Get started with LooK in under 5 minutes.</p>
+            
+            <h2>1. Enter Your URL</h2>
+            <p>Paste any website URL into the input field. LooK works with any public website.</p>
+            
+            <h2>2. Generate Demo</h2>
+            <p>Click <strong>Generate Demo</strong> and our AI will:</p>
+            <ul>
+              <li>Analyze your website's layout and content</li>
+              <li>Generate a professional voiceover script</li>
+              <li>Record an automated walkthrough with smart zoom</li>
+              <li>Track cursor movements for natural-looking demos</li>
+            </ul>
+            
+            <h2>3. Edit & Export</h2>
+            <p>Fine-tune the script, adjust zoom points, add markers, then export to your preferred platform.</p>
+            
+            <div class="docs-tip">
+              <strong>💡 Pro Tip:</strong> Use <strong>Live Record</strong> mode for full control over the recording process.
+            </div>
+          </article>
+          
+          <article id="ai-analysis" class="hidden">
+            <h1>AI Analysis</h1>
+            <p>LooK uses GPT-4 Vision to understand your website.</p>
+            
+            <h2>What We Analyze</h2>
+            <ul>
+              <li><strong>Layout Structure</strong> - Headers, sections, CTAs</li>
+              <li><strong>Brand Colors</strong> - Automatic theme detection</li>
+              <li><strong>Key Features</strong> - Product highlights and benefits</li>
+              <li><strong>Interactive Elements</strong> - Buttons, forms, navigation</li>
+            </ul>
+            
+            <h2>Script Generation</h2>
+            <p>Based on the analysis, we generate a professional voiceover script that:</p>
+            <ul>
+              <li>Highlights key selling points</li>
+              <li>Maintains a natural speaking rhythm</li>
+              <li>Fits your specified duration</li>
+            </ul>
+          </article>
+        </main>
+      </div>
+      
+      <div class="docs-footer">
+        <button class="btn btn-secondary" onclick="document.querySelector('.nav-link')?.click()">
+          ← Back to Editor
+        </button>
+        <a href="https://github.com/nirholas/LooK/blob/main/docs/GETTING_STARTED.md" target="_blank" class="btn btn-primary">
+          Full Documentation →
+        </a>
+      </div>
+    </section>
+
+    <!-- Status bar -->
+    <footer class="status-bar">
+      <span id="status-message" class="status-message">Ready</span>
+      <div id="progress-container" class="progress-container hidden">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </footer>
+
+    <!-- Export modal -->
+    <div id="export-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Export Video</h2>
+        <div class="export-options">
+          <div class="setting-row">
+            <label for="export-format">Format</label>
+            <select id="export-format">
+              <option value="youtube">YouTube (1920x1080)</option>
+              <option value="twitter">Twitter (1280x720)</option>
+              <option value="instagram">Instagram (1080x1080)</option>
+              <option value="tiktok">TikTok (1080x1920)</option>
+              <option value="gif">GIF (640x360)</option>
+            </select>
+          </div>
+        </div>
+        <div id="export-progress" class="export-progress hidden">
+          <div class="progress-bar-container">
+            <div id="export-progress-bar" class="progress-bar"></div>
+          </div>
+          <span id="export-status">Rendering...</span>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-export" class="btn btn-secondary">Cancel</button>
+          <button id="start-export" class="btn btn-primary">
+            <span class="icon">🎬</span> Export
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Import Project</h2>
+          <button class="modal-close" id="import-cancel-btn" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="import-description">Import from a website URL or Git repository to generate a demo video.</p>
+          
+          <div class="form-group">
+            <label for="import-url">URL</label>
+            <input 
+              type="url" 
+              id="import-url" 
+              class="form-input" 
+              placeholder="https://example.com or https://github.com/user/repo"
+              required
+            >
+            <p class="form-hint">Paste a website URL or Git repository URL (GitHub, GitLab, Bitbucket)</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="import-type">Import Type</label>
+            <select id="import-type" class="form-select">
+              <option value="auto">Auto-detect</option>
+              <option value="website">Website</option>
+              <option value="git">Git Repository</option>
+            </select>
+          </div>
+          
+          <div id="import-git-options" class="import-git-options hidden">
+            <div class="form-group">
+              <label for="import-branch">Branch (optional)</label>
+              <input type="text" id="import-branch" class="form-input" placeholder="main">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="import-shallow" checked>
+                <span>Shallow clone (faster)</span>
+              </label>
+            </div>
+          </div>
+          
+          <div id="import-progress-section" class="import-progress-section hidden">
+            <div class="import-progress-header">
+              <span id="import-stage">Starting...</span>
+              <span id="import-percent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div id="import-progress-bar" class="progress-bar"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="import-close-btn">Cancel</button>
+          <button class="btn btn-primary" id="import-start-btn">
+            <span class="icon">📥</span> Start Import
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button class="modal-close" aria-label="Close settings">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-tabs">
+            <button class="settings-tab active" data-tab="api">API Keys</button>
+            <button class="settings-tab" data-tab="preferences">Preferences</button>
+            <button class="settings-tab" data-tab="about">About</button>
+          </div>
+          
+          <div class="settings-content" id="settings-api">
+            <div class="form-group">
+              <label for="openai-key">OpenAI API Key</label>
+              <div class="input-with-action">
+                <input type="password" id="openai-key" placeholder="sk-..." class="form-input">
+                <button class="btn btn-icon" id="toggle-openai-key" aria-label="Toggle OpenAI key visibility">👁️</button>
+              </div>
+              <p class="form-hint">Required for AI analysis and voiceover. <a href="https://platform.openai.com/api-keys" target="_blank">Get your key</a></p>
+            </div>
+            
+            <div class="form-group">
+              <label for="groq-key">Groq API Key (Optional)</label>
+              <div class="input-with-action">
+                <input type="password" id="groq-key" placeholder="gsk_..." class="form-input">
+                <button class="btn btn-icon" id="toggle-groq-key" aria-label="Toggle Groq key visibility">👁️</button>
+              </div>
+              <p class="form-hint">Free tier available for script generation. <a href="https://console.groq.com" target="_blank">Get your key</a></p>
+            </div>
+            
+            <div class="api-status-card">
+              <h4>Connection Status</h4>
+              <div class="status-items">
+                <div class="status-item">
+                  <span class="status-dot" id="status-openai"></span>
+                  <span>OpenAI</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-dot" id="status-groq"></span>
+                  <span>Groq</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-dot" id="status-playwright"></span>
+                  <span>Browser</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-content hidden" id="settings-preferences">
+            <div class="form-group">
+              <label>Theme</label>
+              <select class="form-select" id="theme-select">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Default Voice</label>
+              <select class="form-select" id="default-voice">
+                <option value="nova">Nova (Warm)</option>
+                <option value="alloy">Alloy (Neutral)</option>
+                <option value="echo">Echo (Male)</option>
+                <option value="fable">Fable (Expressive)</option>
+                <option value="onyx">Onyx (Deep)</option>
+                <option value="shimmer">Shimmer (Bright)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="auto-save" checked>
+                <span>Auto-save projects</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="settings-content hidden" id="settings-about">
+            <div class="about-card">
+              <h3>L👀K Studio</h3>
+              <p class="version">Version 2.0.0</p>
+              <p>AI-powered product demo video generator. Create stunning demos in seconds.</p>
+              <div class="about-links">
+                <a href="https://github.com/nirholas/LooK" target="_blank">GitHub</a>
+                <a href="https://github.com/nirholas/LooK/issues" target="_blank">Report Issue</a>
+                <a href="https://github.com/nirholas/LooK/blob/main/docs/GETTING_STARTED.md" target="_blank">Documentation</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="settings-cancel">Cancel</button>
+          <button class="btn btn-primary" id="settings-save">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
