@@ -36,3 +36,12 @@ curl -sI https://look-docs.modelcontextprotocol.name | head -1   # HTTP/2 200
 
 In the Cloudflare dashboard, open **Workers & Pages → look-docs → Deployments**.
 Pick an earlier production deployment and select **Rollback to this deployment**.
+
+## Web app
+
+The `look` server (`node bin/repovideo.js serve`) runs on Google Cloud Run (project `aerial-vehicle-466722-p5`, `us-central1`, 2 GiB, 900 s timeout) and is served at https://look.modelcontextprotocol.name through the Cloudflare Worker `look-proxy`.
+
+```bash
+gcloud run deploy look --source . --region us-central1 --project aerial-vehicle-466722-p5 \
+  --allow-unauthenticated --memory 2Gi --cpu 2 --timeout 900 --port 8080
+```
