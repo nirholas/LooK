@@ -4,7 +4,7 @@
 site_name: LooK Documentation
 site_description: AI-powered product demo video generator. One command, professional results.
 site_author: nirholas
-site_url: https://nirholas.github.io/LooK/
+site_url: https://look-docs.modelcontextprotocol.name/
 repo_url: https://github.com/nirholas/LooK
 repo_name: nirholas/LooK
 edit_uri: edit/main/docs/

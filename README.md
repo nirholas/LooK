@@ -381,7 +381,7 @@ Built with ❤️ by [nichbot](https://github.com/nichbot)
 
 ## Documentation
 
-Full documentation site: **https://nirholas.github.io/LooK/**
+Full documentation site: **https://look-docs.modelcontextprotocol.name/**
 
 - [Getting started](docs/getting-started.md) covers install and first run.
 - [Examples](docs/examples.md) has copy-paste snippets.

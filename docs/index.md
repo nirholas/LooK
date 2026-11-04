@@ -146,7 +146,7 @@ npm install -g look-demo
 
 - :fontawesome-brands-github: [GitHub Repository](https://github.com/nirholas/LooK)
 - :fontawesome-solid-bug: [Report Issues](https://github.com/nirholas/LooK/issues)
-- :fontawesome-solid-book: [Documentation](https://nirholas.github.io/LooK/)
+- :fontawesome-solid-book: [Documentation](https://look-docs.modelcontextprotocol.name/)
 
 ## License
 
