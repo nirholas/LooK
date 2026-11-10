@@ -55,7 +55,7 @@ npm install -g look-demo
 ```
 
 **Requirements:**
-- Node.js 18+
+- Node.js 22.19+ (required by WebdriverIO 10)
 - FFmpeg: `brew install ffmpeg` (Mac) or `apt install ffmpeg` (Linux)
 - OpenAI API key: `export OPENAI_API_KEY=sk-...`
 

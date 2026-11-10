@@ -1,5 +1,5 @@
 # LooK - AI Demo Video Generator
-FROM node:20-slim
+FROM node:22-slim
 
 # Install system dependencies for Playwright and FFmpeg
 RUN apt-get update && apt-get install -y \

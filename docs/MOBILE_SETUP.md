@@ -83,7 +83,7 @@ emulator -avd Pixel_7_API_34
 
 ```bash
 # Install Appium globally
-npm install -g appium
+npm install -g appium@3
 
 # Install the Android driver
 appium driver install uiautomator2
@@ -125,7 +125,7 @@ xcrun simctl boot "iPhone 15 Pro"
 
 ```bash
 # Install Appium
-npm install -g appium
+npm install -g appium@3
 
 # Install the iOS driver
 appium driver install xcuitest

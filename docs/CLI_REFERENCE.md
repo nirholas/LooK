@@ -214,7 +214,7 @@ look mobile ./app.apk --platform android --device "Pixel 7"
 
 1. Appium server running:
    ```bash
-   npm install -g appium
+   npm install -g appium@3
    appium --port 4723
    ```
 

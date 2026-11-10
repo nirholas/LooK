@@ -9,7 +9,7 @@ Before recording mobile demos:
 ### For iOS
 ```bash
 # Install Appium
-npm install -g appium
+npm install -g appium@3
 
 # Install iOS driver
 appium driver install xcuitest
@@ -24,7 +24,7 @@ appium --port 4723
 ### For Android
 ```bash
 # Install Appium
-npm install -g appium
+npm install -g appium@3
 
 # Install Android driver
 appium driver install uiautomator2
