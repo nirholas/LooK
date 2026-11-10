@@ -90,5 +90,9 @@
     "ui/dist/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "overrides": {
+    "glob@>=9.0.0 <=14.0.1": "^14.0.2",
+    "basic-ftp@<=6.2.0": "^6.2.1"
+  }
 }
