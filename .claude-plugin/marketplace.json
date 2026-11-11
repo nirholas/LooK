@@ -1,0 +1,21 @@
+{
+  "name": "look",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Record a website with AI narration and export a polished product demo video with the LooK CLI.",
+  "plugins": [
+    {
+      "name": "look-demo-video",
+      "source": "./plugins/look-demo-video",
+      "description": "Record a website with AI narration and export a polished product demo video with the LooK CLI.",
+      "category": "design",
+      "tags": [
+        "demo-video",
+        "screen-recording",
+        "cli",
+        "voiceover"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "look-demo-video",
+  "version": "2.1.2",
+  "description": "Record a website with AI narration and export a polished product demo video with the LooK CLI.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/LooK",
+  "homepage": "https://look.modelcontextprotocol.name",
+  "keywords": [
+    "demo-video",
+    "screen-recording",
+    "cli",
+    "voiceover"
+  ]
+}
